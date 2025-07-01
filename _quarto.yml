@@ -1,0 +1,50 @@
+project:
+  type: book
+  output-dir: docs
+
+book:
+  title: Time Series Analysis
+  author: Young Eun Jeon, Jeong-Wook Lee, and Jung-In Seo
+  repo-url: https://github.com/JJJJYE/TS
+  repo-branch: master
+  repo-actions: [issue]
+  chapters:
+    - index.qmd
+    - part: Statistical Model
+      chapters: 
+        - AR.qmd
+        - MA.qmd
+        - ARMA.qmd
+        - ARIMA.qmd
+        - SARIMA.qmd
+    - part: Advanced Model
+      chapters:
+        - Regression.qmd
+        - DHR.qmd
+        - STLM.qmd
+        - BSTS.qmd
+        - TBATS.qmd
+        - Bagging.qmd
+        - Ensemble.qmd
+        - Neuron.qmd
+    - part: ML & DL
+      chapters:   
+        - ML.qmd
+        - DL.qmd
+    - part: Imputation
+      chapters:    
+        - Imputation.qmd
+ 
+
+format:
+  html:
+    toc: true
+    number-sections: true
+    theme: cosmo
+    css: styles/styles.css
+    author-meta:  Young Eun Jeon, Jeong-Wook Lee, and Jung-In Seo
+    
+    smooth-scroll: true
+    toc-location: right
+    highlight-style: pygments
+    callout-appearance: simple

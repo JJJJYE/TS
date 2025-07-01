@@ -1,0 +1,736 @@
+---
+title: "Deep Learning"
+format: 
+  html:
+    theme: cosmo
+    smooth-scroll: true
+    toc: true
+    toc-location: right
+    # self-contained: true
+# author: 
+#     - name: J.I. Seo
+#       affiliations:
+#       - Gyeongguk National University
+#     - name: J.W. Lee
+#       # affiliations:
+#       # - University of Missouri
+      
+number-sections: true
+highlight-style: pygments
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+options(width=200)
+```
+
+> Dataset : Ridership on Amtrak Trains(미국 철도 회사 "Amtrak"에서 수집한 1991년 1월\~2004년 3월까지 매달 환승 고객 수)
+
+## Data Loading
+
+```{r}
+pacman::p_load("doParallel", "parallel",
+               "data.table", "readr",
+               "skimr", "summarytools", "DT",
+               "dplyr", "magrittr",
+               "ggplot2",
+               "caret", "recipes",
+               "keras",                                                  # keras's Ver. 2.9.0
+               "tfdatasets")                                             # For as_array_iterator   
+
+registerDoParallel(cores=detectCores())
+
+tensorflow::as_tensor(1)                                                 # systemMemory and maxCacheSize
+```
+
+```{r, eval = F}
+# Loading as Tibble Type
+Amtrak.data <- readr::read_csv(".../Amtrak.csv")                 
+
+Amtrak.data %>%
+  as_tibble
+```
+
+```{r, echo = F}
+# Loading as Tibble Type
+Amtrak.data <- readr::read_csv("./DATA/Amtrak.csv")                 
+
+Amtrak.data %>%
+  as_tibble   
+```
+
+`코드 설명` 함수 `readr::read_csv()`는 CSV 파일을 `tibble` 형태로 읽어온다. 이는 데이터 가독성과 처리 속도를 높이며, Package `"tidyverse"`와의 호환성을 향상시킨다.
+
+## Feature Extraction
+
+```{r}
+# 1. Generate New Variables
+Amtrak.data <- Amtrak.data %>%
+  mutate(Date.Time = as.Date(Month, format = "%d/%m/%Y"),       # 날짜를 나타내는 변수 
+         Month = factor(lubridate::month(Date.Time)))           # 월(Month)을 나타내는 변수
+
+Amtrak.data
+
+# 2. Convert Factor to One-hot Encoding
+data_recipe  <- recipe(Ridership ~ ., data = Amtrak.data) %>%   # Define Formula / Ridership: Target
+  step_dummy(Month, one_hot = TRUE) %>%                         # One-hot Encoding
+  prep(training = Amtrak.data, retain = TRUE)                  
+
+Amtrak.data1 <- juice(data_recipe)                               
+
+Amtrak.data1
+```
+
+`코드 설명`
+
+1.  `Date.Time = as.Date(Month, format = "%d/%m/%Y")`
+    - 변수 `Month`를 날짜 형식(Date)으로 변환한다.
+    - 옵션 `format`을 이용하여 날짜 형식을 지정한다.
+        - `"%d/%m/%Y"`는 "일/월/연도" 형식을 의미한다.
+2.  `Month = factor(lubridate::month(Date.Time))`
+    - 함수 `lubridate::month()`를 이용하여 변수 `Date.Time`에서 월(Month)을 추출한다.
+    - 추출한 월을 범주형(Factor) 데이터로 변환한다.
+
+3. `step_dummy(Month, one_hot = TRUE)` 
+    - 범주형 변수 `Month`를 원-핫 인코딩(One-hot Encoding) 변환을 이용하여 수치형 변수로 변환한다.
+    - 각 범주에 대해 하나의 열을 생성하며, 관측치가 해당 범주에 속하면 1, 그렇지 않으면 0을 할당한다.
+
+4.  `prep()`
+    - 정의한 레시피를 실행하여 전처리를 수행한다.
+    - `training = Amtrak.data`: 학습 데이터로 전처리를 수행한다.
+    - `retain = TRUE`: 변환된 데이터 객체를 메모리에 유지한다.
+5.  `juice()`
+    - `prep()` 결과로 변환된 데이터를 반환한다.
+    - 전처리된 데이터를 최종적으로 얻기 위해 사용한다.
+
+## Data Partition
+
+```{r}
+num_train_samples <- round(nrow(Amtrak.data1) * 0.55)                            
+num_val_samples   <- round(nrow(Amtrak.data1) * 0.25)                           
+num_test_samples  <- nrow(Amtrak.data1) - num_train_samples - num_val_samples   
+
+train_df <- Amtrak.data1[seq(num_train_samples), ]              # First 55% of Rows, 1:87 
+val_df   <- Amtrak.data1[seq(from = nrow(train_df) + 1,         # Next 25% of Rows, 88:127
+                             length.out = num_val_samples), ]           
+test_df  <- Amtrak.data1[seq(to = nrow(Amtrak.data1),           # Last 20% of Rows, 128:159
+                             length.out = num_test_samples), ]
+```
+
+```{r}
+# Training Dataset (TrD)
+DT::datatable(train_df)   
+```
+
+```{r}
+# Validation Dataset (VaD)
+DT::datatable(val_df)  
+```
+
+```{r}
+# Test Dataset (TeD)
+DT::datatable(test_df)  
+```
+
+## Preprocess {#sec-preprocess}
+
+### Standardization
+
+```{r}
+# 1. Standardization for Numeric Feature
+## Name of Feature 
+input_data_colnames <- names(Amtrak.data1) %>%           
+  setdiff(c("Date.Time", "Ridership"))                          # 사용하지 않는 변수 "Date.Time"와 Target Ridership 제거            
+
+input_data_colnames
+```
+
+`Caution!` 표준화는 수치형 Feature에 적용하며, 해당 데이터셋에서는 Feature로 고려하는 모든 변수(`Month_X1`, `Month_X2`, `Month_X3`,  `Month_X4`, `Month_X5`, `Month_X6`, `Month_X7`, `Month_X8`, `Month_X9`,  `Month_X10`, `Month_X11`, `Month_X12`)가 수치형이다.
+
+```{r}
+## Standardization
+data_recipe  <- recipe(Ridership ~ ., data = train_df) %>%      # Define Formula / Ridership: Target
+  step_normalize(all_of(input_data_colnames)) %>%               # Standardization for All Feature
+  prep(training = train_df, retain = TRUE)                      # Calculation for Standardization
+
+standard_train_df <- juice(data_recipe)                         # Standardized TrD
+standard_val_df   <- bake(data_recipe, val_df)                  # Standardized VaD
+standard_test_df  <- bake(data_recipe, test_df)                 # Standardized TeD
+```
+
+`Caution!` Training Dataset의 수치형 Feature에 대한 평균과 표준편차를 이용하여 Training Dataset, Validation Dataset, 그리고 Test Dataset에 표준화를 수행한다.
+
+`코드 설명`
+
+1.  `step_normalize(all_of(input_data_colnames))`
+    - Target `Ridership`을 제외한 모든 수치형 Feature에 대해 표준화를 수행한다.
+        - 표준화란 데이터를 평균 = 0, 표준편차 = 1에 맞도록 변환하는 과정이다.
+
+```{r}
+# Standardized TrD
+DT::datatable(standard_train_df)                            
+```
+
+```{r}
+# Standardized TrD
+DT::datatable(standard_val_df)                            
+```
+
+```{r}
+# Standardized TrD
+DT::datatable(standard_test_df)                            
+```
+
+
+### (Input, Target) Dataset 생성
+
+- 머신러닝 기법과 달리 딥러닝 기법을 시계열 데이터에 적용하기 위해서는 주어진 데이터셋을 작게 쪼개어 `(Input, Target) Dataset`을 여러 개 생성하여야 한다.
+
+<center>![](./image/그림1.png){width="100%"}</center>
+
+- 주어진 Dataset을 (Input, Target) Dataset으로 작게 분할하기 위해 다음과 같은 문제를 생각해야 한다.
+    1.  관측한 시계열 데이터의 시간 단위(Unit of Time)
+    2.  예측하고자 하는 시계열 데이터의 시간 단위
+    3.  얼마만큼의 과거 데이터를 바탕으로 미래의 시계열 데이터 값을 예측하고자 하는가?
+        -   즉, 예측을 위해 사용하고자 하는 과거 데이터의 관측 기간
+- 위의 3가지 문제를 바탕으로 Dataset을 분할하는 옵션을 설정한다.
+    1.  `Sampling Rate (SR)`: 예측하고자 하는 시계열 데이터의 시간 단위당 관측한 Data Point 개수(간격)
+        - 예를 들어, 전력량이 2시간마다 관측되었을 때, 3일 후의 전력량을 예측한다면 SR은 "12"이다.
+            - 예측하고자 하는 시계열 데이터는 3일 후의 전력량으로, 시간 단위가 "일(Day)"이며 전력량은 하루 당(Per Day) 12개의 Data Point가 관측된다.
+    2.  `Sequence Length (SL)`: Input의 Data Point 개수(미래의 시계열 데이터 값을 예측하기 위해 고려하는 과거 데이터 길이)
+        -  예를 들어, 지난 5일 동안 관측된 기온을 기반으로 5시간 후의 기온을 예측하고자 한다. 이때 10분마다 기온을 관측하였다고 가정한다.
+            - 지난 5일 동안 관측한 Data Point 개수는 1×6×24시간×5일 = 720개이다.
+            - `Caution!` 딥러닝에서는 예측하고자 하는 시계열 데이터의 시간 단위당 오로지 1개의 Data Point만을 고려하여 (Input, Target) Dataset을 생성한다.
+            - 5시간 후의 기온을 예측하므로 예측하고자 하는 시계열 데이터의 시간 단위는 시(Hour)이다.  
+            - 시당(Per Hour) 오로지 1개의 Data Point만을 고려하므로 `SL`은 720(=1개×6개×24시간×5일)이 아니라 120(=1개×24시간×5일)이 된다.
+<center>![](./image/그림4.png){width="100%"}</center>
+    3.  $k$ : 예측 시점
+        - 예를 들어, 4일 후 시계열 데이터 값을 예측한다면 $k$는 4가 된다.
+    4.  `Delay` : Target의 Index를 계산할 때 사용
+        -   `Delay` = SR $\times$ (SL $+k-$ 1)
+- 현재 예제로 사용하는 `Amtrak` Dataset은 1달 단위로 관측하였으며, 지난 1년 간의 데이터를 이용하여 1달 후의 승객 수(`Ridership`)을 예측하고자 한다.
+    1.  관측한 시계열 데이터의 시간 단위 : 1달마다 관측 → "월(Month)"
+    2.  예측하고자 하는 시계열 데이터의 시간 단위 : 1달 후의 승객 수를 예측 → "월(Month)"
+    3.  예측을 위해 사용하고자 하는 과거 데이터의 관측 기간 : 1년
+        - SR = 1 ← 예측하고자 하는 시계열 데이터의 시간 단위(월)당 관측한 Data Point 개수
+        - SL = 12 ← 지난 1년 동안 관측된 승객 수를 기반으로 예측하므로 12(=1개 $\times$ 12달)
+        - $k$ = 1 ← 1달 후의 승객 수를 예측하므로 1
+        - Delay = 1 $\times$ (12 $+$ 1 $-$ 1) = 12
+
+![Without Feature](./image/그림2.png){#fig-a}
+
+![With Feature](./image/그림5.png){#fig-b}
+
+`Caution!` Package `"keras"`에서 제공하는 함수 `timeseries_dataset_from_array()`를 이용하면 쉽게 (Input, Target) Dataset을 생성할 수 있으며, 결과는 `TF Dataset` 객체로 반환한다.
+
+```{r}
+## Define Option
+sampling_rate <- 1          
+sequence_length <- 12      
+k <- 1
+delay <- sampling_rate * (sequence_length + k - 1)    
+batch_size <- 16
+```
+
+```{r}
+## Define Input and Target Partition Function
+df_to_inputs_and_targets <- function(df) {
+  
+  inputs <- df[input_data_colnames] %>%                                  # inputs : Standardized Features
+    as.matrix()
+  
+  targets <- as.array(df$Ridership)                                      # (Not Standardized) Target
+  
+  list(
+    head(inputs, -delay),                                                # Drop Last Delay(= 12) Samples
+    tail(targets, -delay)                                                # Drop First Delay(= 12) Samples
+  )
+}
+```
+
+`코드 설명` 함수 `df_to_inputs_and_targets()`는 함수 `timeseries_dataset_from_array()`를 이용하여 (Input, Target) Dataset으로 분할하기 전에 Input과 Target을 구분하는 역할을 한다.
+
+1.  `inputs <- df[input_data_colnames]`
+    - 데이터 프레임 `df`에서 Input(Feature)으로 사용할 열만 선택한다.
+    - `input_data_colnames`는 이전에 정의한 열 이름의 벡터(In @sec-preprocess)이다.
+2.  `targets <- as.array(df$Ridership)`
+    - 타겟 변수(종속 변수) `Ridership`을 선택한다.
+    - 이때 타겟 변수는 표준화되지 않은 원본 데이터이다.
+    - 함수 `as.array()`를 이용하여 Target을 배열로 변환한다.
+3.  `head(inputs, -delay)`
+    - Input(`inputs`)의 마지막에서 `delay`만큼의 샘플을 제거한다.
+    - 필요한 이유: Input에서 Target과 겹칠 가능성이 있는 뒤쪽 데이터를 제거하여 모형 학습에 필요한 과거 시점의 데이터만 포함하도록 한다.
+        - 시계열 예측 문제에서는 Input이 항상 예측해야 하는 Target보다 시간적으로 앞서야 한다.
+        - 만약 Input이 전체 시퀀스를 포함하면, 예측 대상인 Target과 겹칠 가능성이 생긴다.
+        - `head(inputs, -delay)`를 이용하면 마지막 `delay` 만큼의 데이터를 제외해 입력 시퀀스의 끝이 Target보다 항상 과거 시점을 포함되도록 한다.
+4.  `tail(targets, -delay)`
+    - Target(`targets`)의 첫 `delay`만큼의 샘플을 제거한다.
+    - @fig-a 와 @fig-b 를 보면 알 수 있듯이 첫 번째 (Input, Target) Dataset의 Target 인덱스는 "1+Delay"이다. 
+    - 따라서 `tail(targets, -delay)`를 이용하여 첫 `delay`만큼의 샘플을 제거한다.
+
+```{r}
+## Define Generating (Input, Target) Dataset
+make_dataset <- function(df) {
+  c(inputs, targets) %<-% df_to_inputs_and_targets(df)                   # c(inputs, targets) = c(Standardized Features, Not Standardized Target)
+  
+  # Generating (Input, Target) Dataset
+  timeseries_dataset_from_array(                                         # Returns TF Dataset Object
+    inputs, targets,
+    sampling_rate = sampling_rate,
+    sequence_length = sequence_length,
+    shuffle = FALSE,
+    batch_size = batch_size
+  )
+}
+```
+
+`코드 설명` 함수 `make_dataset()`는 데이터 프레임 `df`을 기반으로 Input과 Target을 구분하고, 이를 딥러닝 기법 적용에 적합한 텐서플로우(TensorFlow) 데이터셋 객체로 변환하는 작업을 수행한다.
+
+1.  `c(inputs, targets) %<-% df_to_inputs_and_targets(df)`
+    - 위에서 정의한 함수 `df_to_inputs_and_targets()`를 호출하여 데이터 프레임을 Input과 Target으로 분리한다.
+    - `inputs`: 모형 학습에 사용할 Input
+    - `targets`: 모형이 예측해야 하는 값
+2. 함수 `timeseries_dataset_from_array()`
+    - 분리한 Input과 Target를 기반으로 여러 개의 (Input, Target) Dataset을 생성하여 모형 학습에 사용할 수 있도록 준비한다.
+
+`Result` 첫 번째 배치에 해당하는 행 번호는 다음과 같다.
+
+<center>![](./image/그림3.png){width="60%"}</center>
+
+```{r}
+# Generate (Input, Target) Dataset for Each Dataset
+train_dataset <- make_dataset(standard_train_df)
+val_dataset   <- make_dataset(standard_val_df)
+test_dataset  <- make_dataset(standard_test_df)
+```
+
+```{r}
+# Input and Target for TrD
+c(samples, targets) %<-% iter_next(as_iterator(train_dataset))           # iter_next in keras (reticulate)
+cat("samples shape: ", format(samples$shape), "\n",                      # samples$shape : (batch_size, sequence_length, #feature)
+    "targets shape: ", format(targets$shape), "\n", sep = "")
+
+# Input and Target for TeD
+c(test_samples, test_targets) %<-% iter_next(as_iterator(test_dataset))   
+test_targets <- as.numeric(test_targets)  
+```
+
+## Analysis
+
+```{r}
+# #Feature
+ncol_input_data <- length(input_data_colnames)
+
+# CallBack
+callbacks_list <- list(
+  callback_early_stopping(
+    monitor = "val_loss",                                                # Metric (Monitor for Validation) 
+    patience = 50                                                        # 50번의 epochs 후에도 loss가 향상되지 않으면 stop!
+  ),
+  callback_model_checkpoint(
+    filepath = "Amtrack.keras",                                          
+    monitor = "val_loss",                                                # 저장 Metric (Monitor for Validation)
+    save_best_only = TRUE                                                # 가장 좋은 결과를 저장
+  ),
+  callback_reduce_lr_on_plateau(        
+    monitor = "val_loss",
+    factor = 0.1,                                                        # 학습률 감소하는 요인: New Learning Rate (LR) = LR * factor
+    patience = 10                                                        # monitor = "val_loss"가 10번의 epochs 동안 향상되지 않으면 콜백 실행
+  )
+)
+```
+
+### Model Definition
+
+#### Deep Neural Network (DNN)
+
+```{r}
+set.seed(100)
+
+inputs <- layer_input(shape = c(sequence_length, ncol_input_data))       
+outputs <- inputs %>%
+  layer_flatten() %>%                                                    # Convert to 1D vector
+  layer_dense(units = 16, activation = "relu") %>%
+  layer_dense(units = 1)                                                 # Default: Linear Activation
+
+model <- keras_model(inputs, outputs)
+
+summary(model)
+```
+
+`코드 설명`
+
+1.  `layer_input(shape = c(sequence_length, ncol_input_data))`: Input 정의
+    - `shape`: Input의 크기를 정의한다.
+        - `sequence_length`: 한 번의 입력에서 사용하는 시간 스텝의 수로 `Amtrack` Dataset에서는 12이다.
+        - `ncol_input_data`: 각 시점의 Feature 개수이다.
+        - 예를 들어, 입력 데이터가 `(10, 3)`의 형태라면, 10개의 시간 단계와 3개의 Feature를 포함한다.
+        - `Caution!` `layer_input(shape = c(sequence_length, 1))`은 Feature가 없을 때, 그리고 Feature가 1개 있을 때 두 경우에 모두 사용된다.
+        
+2. `layer_flatten()`: 1차원 벡터로 변환
+    - 예를 들어, `(sequence_length, ncol_input_data)` 크기의 Input은 `sequence_length * ncol_input_data` 크기의 1차원 벡터로 변환된다.
+3. `layer_dense(units = 16, activation = "relu")`: Dense 계층
+    - 은닉층으로 16개의 뉴런을 포함한다.
+    - 활성화 함수로 ReLU(Rectified Linear Unit)를 사용한다.
+4. `layer_dense(units = 1)`
+    - 회귀 문제(연속형 값 예측)를 해결하기 위해 `units = 1`로 설정한다.
+    - 활성화 함수가 지정되지 않았으므로 선형 활성화 함수(Linear Activation)를 사용한다.
+5. `model <- keras_model(inputs, outputs)`: 입력과 출력을 연결하여 딥러닝 모형 정의
+
+#### Convolutional Neural Network 1D (CNN 1D)
+
+```{r}
+set.seed(100)
+
+inputs <- layer_input(shape = c(sequence_length, ncol_input_data))       
+outputs <- inputs %>%
+  layer_conv_1d(filters = 8, kernel_size = 6, activation = "relu") %>%  # kernel_size=Window Length, 6개월 단위의 변화나 트렌드에 초점
+  layer_max_pooling_1d(pool_size = 2) %>%                               # Down-Sampling = Reduce Size
+  layer_conv_1d(filters = 8, kernel_size = 3, activation = "relu") %>%  # Due to layer_max_pooling_1d(), kernel_size = 3
+  layer_global_average_pooling_1d() %>%                                 # Average for Each Convolution Feature Map
+  layer_dense(units = 1)                                                # Default: Linear Activation
+
+model <- keras_model(inputs, outputs)
+
+summary(model)
+```
+
+`코드 설명`
+
+1.  `layer_conv_1d(filters = 8, kernel_size = 6, activation = "relu")`: 1D 콘벌루션 계층
+    - `filters`: 콘벌루션 필터 개수를 입력한다.
+    - `kernel_size`: 모형이 학습할 데이터 패턴의 시간적 범위(시계열 윈도우 크기)를 결정한다(커널 크기: $1\times$ `kernel_size`).
+        - `Amtrack` Dataset에서의 권장 설정:
+            - 작은 패턴 탐지: `kernel_size = 2` ~ `kernel_size = 4`
+                - 2~4개월 단위의 국소적인(Local) 패턴을 학습하는 데 유용
+            - 중간 패턴 탐지: `kernel_size = 6`
+                - 반년 단위의 변화나 트렌드에 초점
+            - 전체 시퀀스 탐지: `kernel_size = 12`
+                - 전체 12개월 데이터를 한 번에 학습(권장되지는 않음, 과적합 위험)
+        - `kernel_size`은 `sequence_length`보다 큰 값을 입력할 수 없다.      
+    - `activation`: 활성화 함수를 입력한다.
+2.  `layer_max_pooling_1d(pool_size = 2)`: 1D Max Pooling 계층 → 시계열 데이터의 차원을 축소
+    - `pool_size`(= Max Pooling Window Length)를 "2"로 지정한다.
+    - `strides`의 경우 옵션 `pool_size`에 입력한 값이 Default(여기서는 2)이다.
+    - 두 옵션을 통해 해당 계층에서 입력 데이터의 차원을 절반으로 축소한다.
+    - 함수 `layer_max_pooling_1d()` 다음에 입력한 함수 `layer_conv_1d()`의 옵션 `kernel_size`는 절반으로 축소한 "3"으로 지정한다.
+3.  `layer_global_average_pooling_1d()`: 이전 콘벌루션 계층의 결과를 1차원으로 변환
+4. `layer_dense(units = 1)`: Dense 계층
+    - 회귀 문제(연속형 값 예측)를 해결하기 위해 `units = 1`로 설정한다.
+    - 활성화 함수가 지정되지 않았으므로 선형 활성화 함수(Linear Activation)를 사용한다.
+    
+#### Long Short-Term Memory (LSTM)
+
+```{r}
+# 1. Simple LSTM
+set.seed(100)
+
+inputs <- layer_input(shape = c(sequence_length, ncol_input_data))      
+outputs <- inputs %>%
+  layer_lstm(units = 16) %>%                                             # units : Dimension of Output Space (Hidden State) (Ref. https://jiwonkoh.tistory.com/188)
+  layer_dense(units = 1)                                                 # Default: Linear Activation
+
+model <- keras_model(inputs, outputs)
+
+summary(model)
+```
+
+`코드 설명`
+
+1.  `layer_lstm(units = 16)`: LSTM 계층
+    - `units`: LSTM 계층이 출력하는 벡터의 차원을 지정한다.
+        - `units = 16`은 해당 LSTM 계층은 16차원의 벡터를 출력한다는 의미이다.
+        - 이는 LSTM의 은닉 상태와 셀 상태의 크기를 정의하며, `units`의 값은 LSTM 계층이 각 타임스텝에서 출력하는 벡터의 차원이 된다.
+        - 더 큰 `units` 값은 더 복잡한 패턴 학습이 가능하지만 계산 비용 증가한다.
+2.  `layer_dense(units = 1)`: Dense 계층 → LSTM 계층의 출력(16차원 벡터)을 단일 값으로 변환
+    - 회귀 문제(연속형 값 예측)를 해결하기 위해 `units = 1`로 설정한다.
+    - 활성화 함수가 지정되지 않았으므로 선형 활성화 함수(Linear Activation)를 사용한다.
+
+
+```{r}
+# 2. Simple LSTM based on recurrent_dropout
+set.seed(100)
+
+inputs <- layer_input(shape = c(sequence_length, ncol_input_data))      
+outputs <- inputs %>%
+  layer_lstm(units = 32, recurrent_dropout = 0.25) %>%                   # recurrent_dropout : Dropout Rate of Recurrent Units
+  layer_dropout(0.5) %>%                                                 # Dropout Layer after the LSTM for Regularizing Dense Layer
+  layer_dense(units = 1)                                                 # Default: Linear Activation
+
+model <- keras_model(inputs, outputs)
+
+summary(model)
+```
+
+`코드 설명`
+
+1. `layer_lstm(units = 32, recurrent_dropout = 0.25)`: LSTM 계층  
+    - `units = 32`: LSTM 계층이 출력할 벡터 차원은 32이다.  
+        - LSTM이 학습하는 복잡한 패턴의 표현력을 조절한다.  
+        - 값이 클수록 복잡한 패턴 학습 가능하지만 계산 비용이 증가한다.  
+    - `recurrent_dropout = 0.25`: 순환 상태 업데이트 시, 일부 뉴런을 무작위로 비활성화(Dropout)하여 과적합을 방지한다.  
+       - 값 `0.25`는 25%의 유닛을 비활성화함을 의미한다.  
+       - Ref. [A Theoretically Grounded Application of Dropout in Recurrent Neural Networks, Gal and Ghahramani (2016)](https://proceedings.neurips.cc/paper/2016/file/076a0c97d09cf1a0ec3e19c7f2529f2b-Paper.pdf)
+
+<center>![Recurrent Dropout (출처: https://arxiv.org/pdf/1603.05118)](./Figure/rec_drop.png){width="50%"}</center>
+
+2. `layer_dropout(0.5)`: 드롭아웃 계층  
+    - `rate = 0.5`: 전체 뉴런의 50%를 무작위로 비활성화하여 과적합을 방지한다.  
+
+3. `layer_dense(units = 1)`: Dense 계층  
+    - 회귀 문제(연속형 값 예측)를 해결하기 위해 `units = 1`로 설정한다.
+    - 활성화 함수가 지정되지 않았으므로 선형 활성화 함수(Linear Activation)를 사용한다.
+
+  
+```{r}
+# 3. Bidirection LSTM
+set.seed(100)
+
+inputs <- layer_input(shape = c(sequence_length, ncol_input_data))       
+outputs <- inputs %>%
+  bidirectional(layer_lstm(units = 16)) %>%
+  layer_dense(units = 1)                                                 # Default: Linear Activation
+
+model <- keras_model(inputs, outputs)
+
+summary(model)
+```
+
+`코드 설명`
+
+1. `bidirectional(layer_lstm(units = 16))`: 양방향 LSTM 계층
+    - `bidirectional`: LSTM을 Input의 앞방향(Forward)과 뒤방향(Backward)으로 학습시킨다.  
+     - `layer_lstm(units = 16)`  
+       - LSTM 계층의 출력 공간의 차원은 16이다.  
+       - 양방향 학습으로 인해, 최종 출력은 앞방향 출력(16차원)과 뒤방향 출력(16차원)을 합쳐 32차원의 벡터이다.  
+     - 양방향 구조는 Input의 문맥 정보(앞뒤 관계)를 더 잘 포착할 수 있도록 돕는다.  
+
+2. `layer_dense(units = 1)`: Dense 계층  
+    - 회귀 문제(연속형 값 예측)를 해결하기 위해 `units = 1`로 설정한다.
+    - 활성화 함수가 지정되지 않았으므로 선형 활성화 함수(Linear Activation)를 사용한다.
+
+
+<center>![](./Figure/bidirec_lstm.png){width="100%"}</center>
+
+
+#### Gated Recurrent Unit (GRU)
+
+```{r}
+# 1. Simple GRU
+set.seed(100)
+
+inputs <- layer_input(shape = c(sequence_length, ncol_input_data))     
+outputs <- inputs %>%
+  layer_gru(units = 32, recurrent_dropout = 0.5, 
+            return_sequences = TRUE) %>%                                 # 모든 시점(Time Step)에 대해서 은닉 상태값을 출력
+  layer_gru(units = 32, recurrent_dropout = 0.5) %>%
+  layer_dropout(0.5) %>%
+  layer_dense(units = 1)                                                 # Default: Linear Activation
+
+model <- keras_model(inputs, outputs)
+
+summary(model)
+```
+
+`코드 설명`
+
+1. `layer_gru(units = 32, recurrent_dropout = 0.5, return_sequences = TRUE)`: GRU 계층  
+    - `units = 32`: GRU 계층이 출력할 은닉 상태(Hidden State)의 차원은 32이다.  
+        - 이는 GRU가 학습하는 표현 공간의 크기를 의미한다.  
+    - `recurrent_dropout = 0.5`: 순환 상태 업데이트 시, 50%의 뉴런을 무작위로 비활성화하여 과적합을 방지한다.  
+     - `return_sequences = TRUE`: 모든 시점(Time Step)에 대한 은닉 상태 출력을 반환한다.  
+       - GRU와 LSTM 모두 다중 계층으로 쌓을 경우 옵션 `return_sequences = TRUE`이 필요하다. 
+
+2. `layer_dropout(0.5)`: 드롭아웃 계층  
+     - `rate = 0.5`: 모든 출력 값 중 50%를 무작위로 비활성화하여 과적합을 방지한다.  
+
+3. `layer_dense(units = 1)`: Dense 계층   
+    - 회귀 문제(연속형 값 예측)를 해결하기 위해 `units = 1`로 설정한다.
+    - 활성화 함수가 지정되지 않았으므로 선형 활성화 함수(Linear Activation)를 사용한다.
+
+```{r}
+# 2. Bidirection GRU
+set.seed(100)
+
+inputs <- layer_input(shape = c(sequence_length, ncol_input_data))       
+outputs <- inputs %>%
+  bidirectional(layer_gru(units = 16)) %>%
+  layer_dense(units = 1)                                                 # Default: Linear Activation
+
+model <- keras_model(inputs, outputs)
+
+summary(model)
+```
+
+
+`코드 설명`
+
+1. `bidirectional(layer_gru(units = 16))`: 양방향 GRU 계층
+     - `bidirectional`: GRU 계층을 양방향으로 학습시킨다.  
+       - 앞방향(Forward): 입력 시퀀스를 처음부터 끝까지 처리한다.  
+       - 뒤방향(Backward): 입력 시퀀스를 끝에서 처음까지 처리한다.  
+       - 각 방향에서 얻어진 결과를 결합하여 더 풍부한 시퀀스 정보 학습 가능하다.  
+     - `layer_gru(units = 16)`  
+       - GRU 계층의 출력 공간 차원은 16이다.  
+       - 양방향 학습을 적용하면 최종 출력의 차원은 앞방향(16) + 뒤방향(16) = 32이다.  
+
+2. `layer_dense(units = 1)`: Dense 계층 추가  
+    - 회귀 문제(연속형 값 예측)를 해결하기 위해 `units = 1`로 설정한다.
+    - 활성화 함수가 지정되지 않았으므로 선형 활성화 함수(Linear Activation)를 사용한다.
+
+
+#### CNN 1D + GRU
+
+```{r}
+set.seed(100)
+
+inputs <- layer_input(shape = c(sequence_length, ncol_input_data))      
+outputs <- inputs %>%
+  layer_conv_1d(filters = 32, kernel_size = 6, activation = "relu") %>%  
+  layer_max_pooling_1d(pool_size = 2) %>%
+  layer_conv_1d(filters = 32, kernel_size = 3, activation = "relu") %>%
+  layer_gru(units = 32, recurrent_dropout = 0.5, return_sequences = TRUE) %>%
+  layer_dropout(0.1) %>%
+  layer_dense(units = 1)                                                 # Default: Linear Activation
+
+model <- keras_model(inputs, outputs)
+
+summary(model)
+```
+
+`코드 설명`
+
+1. `layer_conv_1d(filters = 32, kernel_size = 6, activation = "relu")`: 1D 컨볼루션 계층 
+    - `filters`: 콘벌루션 필터 개수를 입력한다.
+        - 필터 수가 많을수록 더 복잡한 특징을 학습할 수 있지만 계산 비용 증가한다. 
+    - `kernel_size`: 모형이 학습할 데이터 패턴의 시간적 범위(시계열 윈도우 크기)를 결정한다.  
+    - `activation`: 활성화 함수를 입력한다.
+
+2.  `layer_max_pooling_1d(pool_size = 2)`: 1D Max Pooling 계층 → 시계열 데이터의 차원을 축소
+    -   `pool_size`(= Max Pooling Window Length)를 "2"로 지정한다.
+    -   `strides`의 경우 옵션 `pool_size`에 입력한 값이 Default(여기서는 2)이다.
+    -   두 옵션을 통해 해당 계층에서 입력 데이터의 차원을 절반으로 축소한다.
+    -   함수 `layer_max_pooling_1d()` 다음에 입력한 함수 `layer_conv_1d()`의 옵션 `kernel_size`는 절반으로 축소한 "3"으로 지정한다.
+
+3. `layer_gru(units = 32, recurrent_dropout = 0.5, return_sequences = TRUE)`: GRU 계층
+     - `units = 32`: GRU 계층의 출력 공간 차원은 32차원이다.  
+       - 시계열 데이터를 압축된 32차원 벡터로 표현.  
+     - `recurrent_dropout = 0.5`: 순환 상태 업데이트 시 50% 뉴런을 무작위로 비활성화하여 과적합 방지한다.  
+     - `return_sequences = TRUE`: 모든 시점(Time Step)에 대한 은닉 상태 출력을 반환한다.  
+       - 이 출력은 다음 계층(드롭아웃 계층)에서 사용된다.  
+
+4. `layer_dropout(0.1)`: 드롭아웃 계층 
+     - `rate = 0.1`: 전체 뉴런 중 10%를 무작위로 비활성화하여 과적합을 방지한다.  
+
+5. `layer_dense(units = 1)`: Dense 계층 
+    - 회귀 문제(연속형 값 예측)를 해결하기 위해 `units = 1`로 설정한다.
+    - 활성화 함수가 지정되지 않았으므로 선형 활성화 함수(Linear Activation)를 사용한다.
+    
+### Model Compile
+
+```{r}
+model %>%
+  compile(optimizer = "rmsprop",
+          loss = "mse",
+          metrics = "mae")
+```
+
+### Model Fit
+
+```{r}
+history <- model %>%
+  fit(train_dataset,
+      epochs = 100,
+      validation_data = val_dataset,
+      callbacks = callbacks_list)
+```
+
+
+```{r}
+plot(history, metrics = "mae")
+```
+
+```{r}
+local({
+  p <- plot(history, metrics = "mae")
+  p$data %<>% .[.$epoch > 1, ]
+  print(p)
+})
+```
+
+```{r}
+# 훈련된 최종 모형 저장
+save_model_tf(model, filepath="model1.keras") 
+```
+
+### Model Evaluate
+
+```{r}
+sprintf("Test MAE: %.2f", evaluate(model, test_dataset)["mae"])
+```
+
+### Prediction
+
+- 함수 `predict()`를 이용하여 Test Dataset에 대한 예측을 수행한다.
+
+```{r}
+# 훈련된 최종 모형에 대한 예측
+predictions <- model %>% 
+  predict(test_dataset)                     # In 3-1. test_dataset: (Input, Target) Dataset으로 분할된 TeD
+
+predictions
+```
+
+`Caution!` 딥러닝 기법을 시계열 데이터에 적용할 때 Training Dataset 뿐만 아니라 Test Dataset도 `(Input, Target) Dataset으로 분할`한다. 그리고 Test Dataset의 모든 Index에 대해 예측을 수행하는 것이 아니라 Target에 해당하는 Index에 대해서만 예측값을 생성한다. 
+
+```{r}
+# Best Model Loading
+model1 <- load_model_tf("Amtrack.keras")    # 자동 저장된 Best model Loading
+
+# Best Model에 대한 예측
+predictions1 <- model1 %>% 
+  predict(test_dataset)                     # In 3-1. test_dataset: (Input, Target) Dataset으로 분할된 TeD
+
+predictions1
+```
+
+
+```{r}
+# Actual Values Corresponding to Prediction Values 
+num_last <- NROW(test_df$Ridership) - NROW(predictions) - delay         
+test_y <- test_df$Ridership %>%                                          # test_df$Ridership : Target
+  tail(-delay) %>%                                                       # Drop First Delay Samples Because Index of Target Starts from 1+delay            
+  head(-num_last)                                                        # Drop Last 11
+```
+
+`Caution!` 위에서 언급했듯이 Test Dataset의 모든 Index에 대해 예측을 수행하는 것이 아니라 (Input, Target) Dataset으로 분할하고, Target에 해당하는 Index에 대해서만 예측값을 생성한다. 그래서 함수 `predict()`을 통해 생성한 예측값에 대응하는 실제값만 남겨두기 위해 위의 코드를 수행한다.
+
+```{r}
+NROW(predictions)
+NROW(test_y)
+```
+
+```{r}
+# Accuracy using MAE
+MAE <- mean( abs(predictions-test_y) )
+
+MAE
+```
+
+```{r}
+# Accuracy using MSE
+MSE <- mean( (predictions-test_y)^2 )
+
+MSE
+```
+
+
+```{r}
+# Prediction Result Plot
+plot(predictions, type = "l")
+lines( test_y, col="blue" )
+
+plot(test_y, predictions, xlab = "Observation", ylab = "Prediction")
+abline(a = 0, b = 1, col = "black", lty = 2) 
+```
+

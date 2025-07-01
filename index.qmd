@@ -1,0 +1,32 @@
+---
+title: "Welcome"
+format: html
+number-sections: false
+editor: visual
+author:
+    - name: Y.E. Jeon
+      affiliations:
+      - Gyeongkuk National University
+    - name: J.W. Lee
+      affiliations:
+      - University of Missouri
+    - name: J.I. Seo
+      affiliations:
+      - Gyeongkuk National University
+resources:
+  - Data/**
+---
+
+------------------------------------------------------------------------
+
+# About
+
+This book serves as a comprehensive and practical guide for anyone working with time series data—from beginners seeking a solid foundation to experienced analysts aiming to build sophisticated forecasting models. It begins with classical statistical models such as AR, MA, ARMA, ARIMA, and SARIMA, providing both theoretical background and hands-on implementation using R.
+
+Going beyond the basics, the book explores advanced modeling techniques including regression-based forecasting, Dynamic Harmonic Regression (DHR), and Seasonal-Trend decomposition with Loess (STLM). Each method is presented with clear explanations and practical R code examples, allowing readers to understand not only how the models work but also when and why to use them.
+
+In addition, the book delves into modern approaches to time series forecasting using machine learning and deep learning. Techniques such as Random Forest, XGBoost, LSTM, and GRU are introduced in the context of time series applications, with detailed R implementations that bridge the gap between traditional methods and cutting-edge analytics.
+
+By combining theory with real-world applications, this book equips readers with the tools to uncover patterns, model complex dynamics, and generate reliable forecasts. It is designed for data scientists, statisticians, economists, and researchers in any field where time-dependent data plays a critical role.
+
+※[Download Example Data](https://jjjjye.github.io/TS/Data/Data.zip)

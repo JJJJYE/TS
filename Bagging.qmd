@@ -1,0 +1,520 @@
+---
+title: "Bootstrap and Bagging"
+format: 
+  html:
+    theme: cosmo
+    smooth-scroll: true
+    toc: true
+    toc-location: right
+    # self-contained: true
+# author: 
+#     - name: J.I. Seo
+#       affiliations:
+#       - Gyeongguk National University
+#     - name: J.W. Lee
+#       # affiliations:
+#       # - University of Missouri
+      
+number-sections: true
+highlight-style: pygments
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+options(width=200)
+```
+
+## Amtrak
+
+예제 데이터로 사용하는 `"Amtrak.csv"`은 1991년 1월부터 2004년 3월까지 미국 철도 회사인 암트랙에서 제공한 월간 승객 수(단위 : 1,000명)가 기록되어져 있다. 
+
+### 데이터 불러오기
+
+```{r, eval = F}
+pacman::p_load("forecast",
+               "dplyr",
+               "ggplot2",
+               "doParallel", "parallel")           # For 병렬 처리
+
+registerDoParallel(cores=detectCores())            # 사용할 Core 개수 지정     
+
+Amtrak.data <- read.csv(".../Amtrak.csv")          # 데이터 불러오기
+
+Amtrak.data %>%
+  as_tibble
+```
+
+```{r, echo = F}
+pacman::p_load("forecast",
+               "dplyr",
+               "ggplot2",
+               "doParallel", "parallel")           # For 병렬 처리
+
+registerDoParallel(cores=detectCores())            # 사용할 Core 개수 지정    
+
+Amtrak.data <- read.csv("./DATA/Amtrak.csv")              # 데이터 불러오기
+
+Amtrak.data %>%
+  as_tibble
+```
+
+
+### 데이터 전처리
+
+```{r}
+# 1. Convert to ts for Target
+ridership.ts <- ts(Amtrak.data$Ridership, 
+                   start = c(1991, 1),            # 시계열의 시작 연도 / c(1991, 1) : 1991년 1월
+                   frequency = 12)                # 주기 / 월별 시계열로 1년에 12번 관측
+
+
+# 시계열 그림
+plot(ridership.ts, 
+     xlab = "Time", ylab = "Ridership (in 000s)",
+     ylim = c(1300, 2300))
+```
+
+`Caution!` CSV 파일로 불러온 데이터를 살펴보면 승객 수를 포함하는 변수 `Ridership`가 수치형임을 알 수 있다. 시계열 데이터 분석을 위해 함수 `ts()`를 이용하여 해당 변수를 시계열 객체로 변환해야 한다.  
+`Result!` 시계열 그림을 살펴보면 `Amtrak` 데이터는 U자 형태의 추세를 발견할 수 있으며, 여름(7월과 8월) 동안에 승객이 급증하는 뚜렷한 계절변동도 볼 수 있다.
+
+### 데이터 분할
+
+`Caution!` 시계열 데이터 분석 시 모형의 과적합을 피하고 미래 데이터에 대한 예측력을 계산하기 위해 `Training Dataset`과 `Test Dataset`으로 분할해야 한다. 시계열 데이터의 경우, 시간에 의존하기 때문에 시간 순서를 고려하여 데이터를 분할해야 한다. 즉, 앞 시점의 데이터를 `Training Dataset`로 사용하여 모형을 구축하고, 뒷 시점의 데이터를 `Test Dataset`로 사용하여 구축된 모형의 성능을 평가한다. 여기서는 데이터 분할을 위해 함수 `window()`를 사용한다.
+
+```{r}
+# Partition for Target
+train.ts <- window(ridership.ts, 
+                   start = c(1991, 1),            # 분할하고자 하는 시계열의 시작 연도 / c(1991, 1) : 1991년 1월
+                   end = c(2001, 3))              # 분할하고자 하는 시계열의 마지막 연도 / c(2001, 3) : 2001년 3월
+
+test.ts <- window(ridership.ts,
+                   start = c(2001, 4))            # 분할하고자 하는 시계열의 시작 연도 / c(2001, 4) : 2001년 4월
+
+nTrain   <- length(train.ts)                      # Training Dataset의 데이터 포인트 개수
+nTest   <- length(test.ts)                        # Test Dataset의 데이터 포인트 개수
+
+train.ts %>%
+  as_tibble
+
+test.ts %>%
+  as_tibble
+
+nTrain
+nTest
+```
+
+## 붓스트랩 시계열 생성
+
+- `배깅(Bagging)`은 "Bootstrap Aggregation"의 약어로 예측 성능을 향상시키기 위해 머신러닝 분야에서 널리 사용하고 있는 기법이다.
+- `배깅`은 Original Dataset으로부터 크기가 동일한 Bootstrap Dataset을 생성한 후, 각 Dataset에 독립적으로 모형 구축을 수행한다.
+    - 그러고나서, 각 모형의 예측 결과를 결합함으로써 예측 성능을 향상시킨다.
+- `배깅`의 장점은 예측 구간(Predictive Interval)을 생성할 수 있으며, 예측 성능을 향상시킬 수 있다는 점이다. 
+- 시계열에 `배깅` 기법을 적용하기 위해서 주의해야할 점은 Bootstrap Dataset을 생성할 때 `시계열의 의존성을 고려`해야 한다는 것이다.
+    - 일반적인 Bootstrap 기법은 Data Point가 서로 독립이라는 가정하에서 수행된다.
+    - 하지만 시계열은 의존성(의존 구조, 자기상관관계)이 존재하기 때문에 일반적인 Bootstrap 기법은 적용할 수 있다.
+    - 의존 구조를 가지는 Dataset에 적용할 수 있는 다양한 Bootstrap 기법이 있으며, 그중 Moving Block Bootstrap (MBB) 방법을 이용하고자 한다. 
+    - MBB 기법은 정상성 이외의 다른 모형 가정은 필요하지 않다는 장점이 있다.
+        - 실생활에서 관측되는 시계열은 추세 또는 계절성이 존재하는 비정상 시계열이므로 MBB를 적용하기 위해 [Bergmeir et al. (2016)](https://isidl.com/wp-content/uploads/2017/06/E4026-ISIDL.pdf)은 새로운 아이디어를 제안했다.   
+            1. 원 시계열에 Box-Cox 변환을 적용
+            2. 변환된 시계열을 seasonal and trend decomposition using loess (STL) 또는 loess를 이용하여 추세(Trend), 계절성(Seasonal), 나머지(Remainder) 성분으로 분해
+            3. 나머지 성분에 MBB 방법을 적용
+            4. 생성한 붓스트랩 나머지 성분에 2번에서 분해된 추세와 계절성 성분을 더하여 새로운 시계열 생성
+            5. 원래 스케일(Scale)로 역변환(1번에서 계산된 Box-Cox의 모수를 기반으로)
+    
+<center>    
+![](./image/순서도_MBB.png){width=70%}    
+</center>    
+
+</br>
+
+- [Bergmeir et al. (2016)](https://isidl.com/wp-content/uploads/2017/06/E4026-ISIDL.pdf)에 의해 제안된 알고리듬은 package `"forecast"`에서 제공하는 함수 `bid.mbb.bootstrap()`를 통해 구현할 수 있다. 
+    - [함수 `bid.mbb.bootstrap()`에 대한 Github 참고](https://github.com/robjhyndman/forecast/blob/master/R/bootstrap.R)
+
+```{r}
+set.seed(10)                                                  # Seed 고정 -> 동일한 결과를 출력하기 위해
+bootseries <- bld.mbb.bootstrap(train.ts, 10) %>%             # 10개의 붓스트랩 시계열 생성 
+  as.data.frame() %>%                                         # Data Frame으로 변환
+  ts(start = 1991, freq = 12)                                 # 시계열 객체 ts로 변환
+
+# Plot
+autoplot(train.ts, ylab = "Bootstrapped series") +            # 원 시계열  
+  autolayer(bootseries, colour = TRUE) +                      # 붓스트랩 시계열 
+  autolayer(ridership.ts, colour = FALSE) +                   # 원 시계열을 한 번 더 지정해서 맨 앞으로 가져오기 
+  guides(colour = "none")
+```
+
+
+## 배깅 기반의 시계열 예측
+
+- 여기서는 붓스트랩 시계열에 예측 모형들을 적용하고, 그 예측 모형들로부터의 결과를 집약하여 하나의 예측 결과를 끌어내는 `배깅`을 이용하는 방법을 설명한다. 
+- 시계열에 대한 `배깅` 기법은 다음의 과정을 거쳐 예측을 수행한다.
+    1. 함수 `bid.mbb.bootstrap()`를 이용하여 $B$개의 붓스트랩 시계열을 생성
+    2. 각 붓스트랩 시계열에 대한 예측 모형을 생성
+        - $B$개의 붓스트랩 시계열을 생성한 경우, $B$개의 예측 모형을 생성할 수 있다.
+    3. 생성한 각 예측 모형에서 예측값을 계산
+        - 미래 특정 시점에 대해 $B$개의 예측값이 생성된다.
+    4. $B$개의 예측값에 대해 평균 또는 중앙값 등을 이용하여 최종 예측값을 계산   
+- `배깅`을 이용하면 단일 예측모형보다 더 나은 예측 결과를 얻을 수 있다.
+
+### ETS 모형을 이용한 예측
+
+> 다음은 각 붓스트랩 시계열에 ETS 예측 모형을 적용하여 예측을 수행하는 방법이다.
+
+`Caution!` 신뢰할 수 있는 결과를 얻기 위해 생성하고자 하는 붓스트랩 데이터셋의 개수는 1000개 이상이 되어야 한다. 여기서는 예시를 위해, 10개의 붓스트랩 시계열을 생성하여 예측을 수행한다.
+
+#### Ver. 1
+
+```{r}
+# 1. 10개의 붓스트랩 시계열 생성
+set.seed(10)                                                  # Seed 고정 -> 동일한 결과를 출력하기 위해
+sim <- bld.mbb.bootstrap(train.ts, 10) %>%                    # 10개의 붓스트랩 시계열 생성                 
+  as.data.frame() %>%                                         # Data Frame으로 변환
+  ts(frequency = 12, start = 1991)                            # 시계열 객체 ts로 변환
+
+sim
+```
+
+
+```{r}
+# 2. 각 붓스트랩 시계열에 대해 ETS 모형 적용
+fit.ets <- lapply(sim, 
+                  function(x) ets(x))                         # 함수 ets() : ETS 모형
+fit.ets
+```
+
+`Caution!` ETS 모형 생성은 함수 `ets()`를 이용하며 각 붓스트랩 시계열에 ETS 모형을 적용하기 위해 함수 `lapply()`를 이용할 수 있다. 해당 함수는 붓스트랩 시계열 각각에 함수 `ets()`를 적용하며 리스트 형태로 출력한다.  
+게다가, 맥(Mac)에서는 package `"parallel"`에서 제공하는 함수 `mclapply()`를 이용하면 병렬 처리가 가능하며, 옵션 `mc.core`에 사용할 코어 개수를 지정할 수 있다.  
+`Result!` 총 10개의 ETS 예측 모형이 생성된 것을 알 수 있다.
+
+```{r}
+# 3. 예측
+start  <- tsp(train.ts)[2]+1/12                               # tsp(time series)[2] : Last Date +1/12 = First Date in Forecast
+
+## 3-1. 각 ETS 모형의 예측 결과 생성
+fc  <- lapply(fit.ets, 
+              function(x){ 
+                forecast(x, h = nTest)[["mean"]]              # Test Dataset의 데이터 포인트 개수만큼 예측값 계산 
+                }) %>%  
+  as.data.frame() %>%                                         # Data Frame으로 변환
+  ts(frequency = 12, start = start)                           # 시계열 객체 ts로 변환
+
+fc
+```
+
+`Result!` 위에서 생성한 10개의 ETS 예측 모형 각각에 대해 예측값이 생성된 것을 확인할 수 있다. 
+
+```{r}
+# Plot
+autoplot(train.ts) +                                          # 원 시계열  
+  autolayer(sim, colour = TRUE) +                             # 붓스트랩 시계열  
+  autolayer(fc, colour = TRUE) +                              # 특정 시점까지의 예측값
+  autolayer(train.ts, colour = FALSE) +                       # 원 시계열을 한 번 더 지정해서 맨 앞으로 가져오기 
+  ylab("Bootrstrapped series") + 
+  guides(colour = "none")
+```
+
+```{r}
+# 4. 평균을 이용한 최종 예측 
+apply(fc, 1, mean)                                            # 중앙값일 경우, mean -> median
+```
+
+
+#### Ver. 2
+
+`Caution!` 붓스트랩 시계열을 생성하고 각각에 ETS 예측 모형을 생성하는 과정은 함수 `baggedETS()`를 통해 수행할 수 있다. 예를 들어, 10개의 붓스트랩 시계열 각각에 대해 ETS 예측 모형을 생성하는 코드 `lapply(bld.mbb.bootstrap(train.ts, 10), function(x){ets(x)})`은  
+`baggedETS(train.ts, bld.mbb.bootstrap(train.ts, 10))`와 동일하다. 
+
+```{r}
+# 1-4번 : 10개의 붓스트랩 시계열을 생성하고 각각에 ETS 예측 모형을 생성한 후 예측
+set.seed(10)                                                  # Seed 고정 -> 동일한 결과를 출력하기 위해
+baggedfc <- train.ts %>% 
+  baggedETS(bld.mbb.bootstrap(train.ts, 10)) %>%              # 10개의 붓스트랩 시계열을 생성한 후, 각각에 ETS 예측 모형 생성    
+  forecast(h = nTest)                                         # Test Dataset의 데이터 포인트 개수만큼 예측값 계산 
+
+baggedfc
+```
+
+`Result!` 결과에서 `Point Forecast`는 특정 시점에서의 붓스트랩 예측값들의 평균이며, 위의 "Ver.1"에서 "4. 평균을 이용한 최종 예측"과 결과가 동일하다. `Lo 100`은 특정 시점에서의 붓스트랩 예측값들의 최솟값, `Hi 100`는 특정 시점에서의 붓스트랩 예측값들의 최댓값을 의미한다.
+
+```{r}
+# 특정 시점에서 각 붓스트랩 시계열의 예측값
+baggedfc$forecasts_boot
+```
+
+`Result!` 열 번호는 생성된 10개의 붓스트랩 시계열 각각을 의미하며, 각 열의 값들은 특정 시점까지 붓스트랩 시계열에 대한 예측값이다.
+
+```{r}
+# 특정 시점에서 붓스트랩 예측값들의 평균
+baggedfc$mean
+```
+
+```{r}
+# 특정 시점에서 붓스트랩 예측값들의 중앙값
+baggedfc$median
+```
+
+```{r}
+# 95% Predictive Interval
+boot.pred <- t(baggedfc$forecasts_boot)                       # 특정 시점에서 각 붓스트랩 시계열의 예측값
+PI.pred   <- apply(boot.pred, 2, function(x) { quantile(x, probs = c(0.025, 0.975) ) })
+```
+
+`Result!` 95% 예측 구간은 붓스트랩 시계열에 대한 예측값들의 분위수를 계산하여 얻을 수 있다.
+
+```{r}
+# Results for 95% Predictive Interval 
+data.frame("PI.lower" = PI.pred[1,], "PI.upper" = PI.pred[2,], 
+           "length of PI" = PI.pred[2,]-PI.pred[1,]) %>%
+  as_tibble()
+```
+
+
+#### 예측 결과 비교
+
+- 원 시계열을 이용한 예측 결과와 배깅을 이용한 예측 결과를 비교한다.
+
+```{r}
+# 원 시계열에 대한 예측
+etsfc    <- train.ts %>% 
+  ets() %>%                                                   # ETS 예측 모형 생성
+  forecast(h = nTest)                                         # Test Dataset의 데이터 포인트 개수만큼 예측값 계산 
+
+# Plot
+autoplot(train.ts) +                                          # 원 시계열 
+  ylab("Ridership") +                                         # y축 라벨 
+  autolayer(etsfc, series = "ETS", PI = FALSE) +              # 원 시계열에 대한 예측 결과
+  autolayer(baggedfc, series = "BaggedETS", PI = FALSE) +     # 배깅을 이용한 예측 결과
+  guides(colour= guide_legend(title = "Prediction"))
+```
+
+
+```{r}
+# Plot with Predictive Interval
+## 1. Original Prediction Result
+Original <- data.frame("Date" = as.numeric(time(test.ts)),                    # Date
+                       "Y" = c(test.ts),                                      # Test Dataset
+                       "Pred" = c(etsfc$mean),                                # Prediction Result
+                       "PI.lower" = c(etsfc$lower[,2]),                       # Lower of Predictive Interval
+                       "PI.upper" = c(etsfc$upper[,2]),                       # Upper of Predictive Interval
+                       "Type" = "Original"
+                       )
+
+Original %>%
+  as_tibble
+
+
+## 2. Bagging Prediction Result
+Bagging <- data.frame("Date" = as.numeric(time(test.ts)),                     # Date
+                      "Y" = c(test.ts),                                       # Test Dataset
+                      "Pred" = c(baggedfc$mean),                              # Prediction Result
+                      "PI.lower" = PI.pred[1,],                               # Lower of Predictive Interval
+                      "PI.upper" = PI.pred[2,],                               # Upper of Predictive Interval
+                      "Type" = "Bagging" 
+)
+
+Bagging %>%
+  as_tibble
+
+## 3. Combine
+df <- rbind(Original, Bagging)
+
+df %>%
+  as_tibble
+
+## 4. Plot
+ggplot(df, aes(x = Date, y = Pred, group = Type)) +
+  geom_line(aes(col = Type)) +
+  geom_line(aes(y = Y)) +                                                    # Test Dataset                
+  geom_ribbon(aes(ymin = PI.lower, ymax = PI.upper), fill = "grey30", alpha = 0.3) +
+  facet_wrap(~Type) +
+  theme_bw()
+```
+
+
+```{r}
+# 예측 정확도
+forecast::accuracy(etsfc$mean, test.ts)
+
+forecast::accuracy(baggedfc$mean, test.ts)
+```
+
+
+### ARIMA 모형을 이용한 예측
+
+> 다음은 각 붓스트랩 시계열에 ARIMA 예측 모형을 적용하여 예측을 수행하는 방법이다.
+
+`Caution!` 일반적으로 ETS 모형보다 ARIMA 모형이 더 정확한 것으로 알려져 있으며, 신뢰할 수 있는 결과를 얻기 위해서 생성하고자 하는 붓스트랩 데이터셋의 개수는 1000개 이상이 되어야 한다. 여기서는 예시를 위해, 10개의 붓스트랩 시계열을 생성하여 예측을 수행한다.
+
+
+#### Ver. 1
+
+```{r}
+# 1. 10개의 붓스트랩 시계열 생성
+set.seed(10)                                                  # Seed 고정 -> 동일한 결과를 출력하기 위해
+sim <- bld.mbb.bootstrap(train.ts, 10) %>%                    # 10개의 붓스트랩 시계열 생성                 
+  as.data.frame() %>%                                         # Data Frame으로 변환
+  ts(frequency = 12, start = 1991)                            # 시계열 객체 ts로 변환
+
+sim
+
+# 2. 각 붓스트랩 시계열에 대해 ARIMA 모형 적용
+fit.arima <- lapply(sim, 
+                    function(x) auto.arima(x))                # 함수 auto.arima() : ARIMA 모형
+
+fit.arima
+```
+
+`Caution!` ARIMA 모형 생성은 함수 `auto.arima()`를 이용한다.  
+`Result!` 총 10개의 ARIMA 예측 모형이 생성된 것을 알 수 있다.
+
+```{r}
+# 3. 예측
+start  <- tsp(train.ts)[2]+1/12                               # tsp(time series)[2] : Last Date +1/12 = First Date in Forecast
+
+## 3-1. 각 ARIMA 모형의 예측 결과 생성
+fc  <- lapply(fit.arima, 
+              function(x){ 
+                forecast(x, h = nTest)[["mean"]]              # Test Dataset의 데이터 포인트 개수만큼 예측값 계산 
+              }) %>%  
+  as.data.frame() %>%                                         # Data Frame으로 변환
+  ts(frequency = 12, start = start)                           # 시계열 객체 ts로 변환
+
+fc
+```
+
+`Result!` 위에서 생성한 10개의 ARIMA 예측 모형 각각에 대해 예측값이 생성된 것을 확인할 수 있다.  
+
+```{r}
+# Plot
+autoplot(train.ts) +                                          # 원 시계열  
+  autolayer(sim, colour = TRUE) +                             # 붓스트랩 시계열  
+  autolayer(fc, colour = TRUE) +                              # 특정 시점까지의 예측값
+  autolayer(train.ts, colour = FALSE) +                       # 원 시계열을 한 번 더 지정해서 맨 앞으로 가져오기 
+  ylab("Bootrstrapped series") + 
+  guides(colour = "none")
+```
+
+```{r}
+# 4. 평균을 이용한 최종 예측 
+apply(fc, 1, mean)                                            # 중앙값일 경우, mean -> median
+```
+
+
+#### Ver. 2
+
+`Caution!` 붓스트랩 시계열을 생성하고 각각에 ARIMA 예측 모형을 생성하는 과정은 함수 `baggedModel()`를 통해 수행할 수 있다. 예를 들어, 10개의 붓스트랩 시계열 각각에 대해 ARIMA 예측 모형을 생성하는 코드 `lapply(bld.mbb.bootstrap(train.ts, 10), function(x){auto.arima(x)})`은  
+`baggedModel(train.ts, bld.mbb.bootstrap(train.ts, 10), fn = auto.arima)`와 동일하다. 
+
+```{r}
+# 1-4번 : 10개의 붓스트랩 시계열을 생성하고 각각에 ARIMA 예측 모형을 생성한 후 예측
+set.seed(10)                                                          # Seed 고정 -> 동일한 결과를 출력하기 위해
+baggedfc <- train.ts %>% 
+  baggedModel(bld.mbb.bootstrap(train.ts, 10), fn = auto.arima) %>%   # 10개의 붓스트랩 시계열을 생성한 후, 각각에 ARIMA 예측 모형 생성    
+  forecast(h = nTest)                                                 # Test Dataset의 데이터 포인트 개수만큼 예측값 계산 
+
+baggedfc
+```
+
+`Result!` 결과에서 Point Forecast는 특정 시점에서의 붓스트랩 예측값들의 평균이며, 위의 “Ver.1”에서 “4. 평균을 이용한 최종 예측”과 결과가 동일하다. Lo 100은 특정 시점에서의 붓스트랩 예측값들의 최솟값, Hi 100는 특정 시점에서의 붓스트랩 예측값들의 최댓값을 의미한다.
+
+```{r}
+# 특정 시점에서 각 붓스트랩 시계열의 예측값
+baggedfc$forecasts_boot
+```
+
+`Result!` 열 번호는 생성된 10개의 붓스트랩 시계열 각각을 의미하며, 각 열의 값들은 특정 시점까지 붓스트랩 시계열에 대한 예측값이다.
+
+```{r}
+# 특정 시점에서의 붓스트랩 예측값들의 평균
+baggedfc$mean
+```
+
+```{r}
+# 특정 시점에서의 붓스트랩 예측값들의 중앙값
+baggedfc$median
+```
+
+
+```{r}
+# 95% Predictive Interval
+boot.pred <- t(baggedfc$forecasts_boot)                       # 특정 시점에서 각 붓스트랩 시계열의 예측값
+PI.pred   <- apply(boot.pred, 2, function(x) { quantile(x, probs = c(0.025, 0.975) ) })
+```
+
+`Result!` 95% 예측 구간은 붓스트랩 시계열에 대한 예측값들의 분위수를 계산하여 얻을 수 있다.
+
+```{r}
+# Results for 95% Predictive Interval 
+data.frame("PI.lower" = PI.pred[1,], "PI.upper" = PI.pred[2,], 
+           "length of PI" = PI.pred[2,]-PI.pred[1,]) %>%
+  as_tibble()
+```
+
+
+#### 예측 결과 비교
+
+- 원 시계열을 이용한 예측 결과와 배깅을 이용한 예측 결과를 비교한다.
+
+```{r}
+# 원 시계열에 대한 예측
+arimafc    <- train.ts %>% 
+  auto.arima() %>%                                            # ARIMA 예측 모형 생성
+  forecast(h = nTest)                                         # Test Dataset의 데이터 포인트 개수만큼 예측값 계산 
+
+# Plot
+autoplot(train.ts) +                                          # 원 시계열 
+  ylab("Ridership") +                                         # y축 라벨 
+  autolayer(arimafc, series = "auto.arima", PI = FALSE) +     # 원 시계열에 대한 예측 결과
+  autolayer(baggedfc, series = "BaggedARIMA", PI = FALSE) +   # 배깅을 이용한 예측 결과
+  guides(colour= guide_legend(title = "Prediction"))
+```
+
+```{r}
+# Plot with Predictive Interval
+## 1. Original Prediction Result
+Original <- data.frame("Date" = as.numeric(time(test.ts)),                    # Date
+                       "Y" = c(test.ts),                                      # Test Dataset
+                       "Pred" = c(arimafc$mean),                              # Prediction Result
+                       "PI.lower" = c(arimafc$lower[,2]),                     # Lower of Predictive Interval
+                       "PI.upper" = c(arimafc$upper[,2]),                     # Upper of Predictive Interval
+                       "Type" = "Original"
+)
+
+Original %>%
+  as_tibble
+
+
+## 2. Bagging Prediction Result
+Bagging <- data.frame("Date" = as.numeric(time(test.ts)),                     # Date
+                      "Y" = c(test.ts),                                       # Test Dataset
+                      "Pred" = c(baggedfc$mean),                              # Prediction Result
+                      "PI.lower" = PI.pred[1,],                               # Lower of Predictive Interval
+                      "PI.upper" = PI.pred[2,],                               # Upper of Predictive Interval
+                      "Type" = "Bagging" 
+)
+
+Bagging %>%
+  as_tibble
+
+## 3. Combine
+df <- rbind(Original, Bagging)
+
+df %>%
+  as_tibble
+
+## 4. Plot
+ggplot(df, aes(x = Date, y = Pred, group = Type)) +
+  geom_line(aes(col = Type)) +
+  geom_line(aes(y = Y)) +                                                    # Test Dataset                
+  geom_ribbon(aes(ymin = PI.lower, ymax = PI.upper), fill = "grey30", alpha = 0.3) +
+  facet_wrap(~Type) +
+  theme_bw()
+```
+
+
+```{r}
+# 예측 정확도
+forecast::accuracy(arimafc$mean, test.ts)
+
+forecast::accuracy(baggedfc$mean, test.ts)
+```
