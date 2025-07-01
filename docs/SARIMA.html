@@ -1,0 +1,1340 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.40">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Young Eun Jeon, Jeong-Wook Lee, and Jung-In Seo">
+
+<title>6&nbsp; Seasonal Autoregressive Integrated Moving Average Process – Time Series Analysis</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./Regression.html" rel="next">
+<link href="./ARIMA.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-1092c56c6cadf2eb47b1bc8063ab382a.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-ef31e3f4d9d6eef55c54bdf6b9cd68ca.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="styles/styles.css">
+</head>
+
+<body class="nav-sidebar floating">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./AR.html">Statistical Model</a></li><li class="breadcrumb-item"><a href="./SARIMA.html"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Seasonal Autoregressive Integrated Moving Average Process</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">Time Series Analysis</a> 
+        <div class="sidebar-tools-main">
+    <a href="https://github.com/JJJJYE/TS" title="Source Code" class="quarto-navigation-tool px-1" aria-label="Source Code"><i class="bi bi-github"></i></a>
+</div>
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Welcome</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">Statistical Model</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./AR.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Autoregressive Process</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./MA.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Moving Average Process</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./ARMA.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Autoregressive Moving Average Process</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./ARIMA.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Autoregressive Integrated Moving Average Process</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./SARIMA.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Seasonal Autoregressive Integrated Moving Average Process</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">Advanced Model</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Regression.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Regression-based Forecasting</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./DHR.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Dynamic Harmonic Regression</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./STLM.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">STLM</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./BSTS.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Dynamic Linear Model and Bayesian Structural Time Series</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./TBATS.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">TBATS</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Bagging.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Bootstrap and Bagging</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Ensemble.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Ensemble</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Neuron.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Neural Network Model</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">ML &amp; DL</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./ML.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Machine Learning</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./DL.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Deep Learning</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+ <span class="menu-text">Imputation</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Imputation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Imputation using Kalman Smoothing</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#hstarts-데이터셋" id="toc-hstarts-데이터셋" class="nav-link active" data-scroll-target="#hstarts-데이터셋"><span class="header-section-number">6.1</span> Hstarts 데이터셋</a>
+  <ul class="collapse">
+  <li><a href="#sarima-모형" id="toc-sarima-모형" class="nav-link" data-scroll-target="#sarima-모형"><span class="header-section-number">6.1.1</span> SARIMA 모형</a></li>
+  <li><a href="#예측" id="toc-예측" class="nav-link" data-scroll-target="#예측"><span class="header-section-number">6.1.2</span> 예측</a></li>
+  </ul></li>
+  <li><a href="#airpassengers-데이터셋" id="toc-airpassengers-데이터셋" class="nav-link" data-scroll-target="#airpassengers-데이터셋"><span class="header-section-number">6.2</span> AirPassengers 데이터셋</a>
+  <ul class="collapse">
+  <li><a href="#sarima-모형-1" id="toc-sarima-모형-1" class="nav-link" data-scroll-target="#sarima-모형-1"><span class="header-section-number">6.2.1</span> SARIMA 모형</a></li>
+  <li><a href="#예측-1" id="toc-예측-1" class="nav-link" data-scroll-target="#예측-1"><span class="header-section-number">6.2.2</span> 예측</a></li>
+  </ul></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/JJJJYE/TS/issues/new" class="toc-action"><i class="bi bi-github"></i>Report an issue</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./AR.html">Statistical Model</a></li><li class="breadcrumb-item"><a href="./SARIMA.html"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Seasonal Autoregressive Integrated Moving Average Process</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Seasonal Autoregressive Integrated Moving Average Process</span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="hstarts-데이터셋" class="level2" data-number="6.1">
+<h2 data-number="6.1" class="anchored" data-anchor-id="hstarts-데이터셋"><span class="header-section-number">6.1</span> Hstarts 데이터셋</h2>
+<p>Package <code>"Ecdat"</code>에서 제공하는 Hstarts 데이터셋은 1960년 1분기부터 2001년 4분기까지 캐나다의 분기별 도시 주택 착공 건수의 로그값이다.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 데이터 불러오기</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(Hstarts, <span class="at">package =</span> <span class="st">"Ecdat"</span>)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>Hstarts</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>              hs    hssa
+1960 Q1  7.98933      NA
+1960 Q2  8.83961      NA
+1960 Q3  8.94841      NA
+1960 Q4  8.98907      NA
+1961 Q1  8.39087      NA
+1961 Q2  9.09204      NA
+1961 Q3  9.12005      NA
+1961 Q4  9.04617      NA
+1962 Q1  8.41013      NA
+1962 Q2  9.22375      NA
+1962 Q3  9.21443      NA
+1962 Q4  9.14145      NA
+1963 Q1  8.45105      NA
+1963 Q2  9.27685      NA
+1963 Q3  9.33756      NA
+1963 Q4  9.45561      NA
+1964 Q1  8.77976      NA
+1964 Q2  9.27263      NA
+1964 Q3  9.41833      NA
+1964 Q4  9.62011      NA
+1965 Q1  8.75794      NA
+1965 Q2  9.43931      NA
+1965 Q3  9.48390      NA
+1965 Q4  9.47211      NA
+1966 Q1  8.79664 9.27878
+1966 Q2  9.11291 8.91036
+1966 Q3  9.16440 9.04028
+1966 Q4  9.29422 9.16517
+1967 Q1  8.48501 9.02635
+1967 Q2  9.54072 9.39636
+1967 Q3  9.54173 9.46110
+1967 Q4  9.32963 9.28318
+1968 Q1  8.94546 9.45438
+1968 Q2  9.65637 9.51024
+1968 Q3  9.53218 9.41622
+1968 Q4  9.74087 9.65592
+1969 Q1  9.33424 9.81450
+1969 Q2  9.74377 9.58554
+1969 Q3  9.62086 9.44651
+1969 Q4  9.48319 9.30565
+1970 Q1  8.77168 9.23585
+1970 Q2  9.20780 9.13058
+1970 Q3  9.55310 9.47121
+1970 Q4  9.89450 9.79333
+1971 Q1  8.98494 9.45001
+1971 Q2  9.72167 9.65538
+1971 Q3  9.79269 9.67808
+1971 Q4  9.78452 9.68191
+1972 Q1  9.32732 9.77723
+1972 Q2  9.87133 9.76534
+1972 Q3  9.89598 9.76884
+1972 Q4  9.82695 9.71229
+1973 Q1  9.31671 9.77707
+1973 Q2  9.88422 9.77881
+1973 Q3  9.93495 9.80413
+1973 Q4  9.85924 9.74537
+1974 Q1  9.38782 9.80290
+1974 Q2  9.81992 9.65787
+1974 Q3  9.60643 9.45394
+1974 Q4  9.33082 9.20672
+1975 Q1  8.71970 9.21726
+1975 Q2  9.64702 9.55117
+1975 Q3  9.81971 9.75250
+1975 Q4  9.93424 9.87231
+1976 Q1  9.41461 9.83747
+1976 Q2  9.94131 9.81890
+1976 Q3  9.83033 9.70402
+1976 Q4  9.81435 9.69841
+1977 Q1  9.21837 9.63670
+1977 Q2  9.85179 9.76964
+1977 Q3  9.85837 9.77676
+1977 Q4  9.82785 9.70147
+1978 Q1  9.51044 9.84956
+1978 Q2  9.62183 9.50405
+1978 Q3  9.66669 9.52819
+1978 Q4  9.62811 9.50549
+1979 Q1  9.07376 9.43615
+1979 Q2  9.52627 9.41328
+1979 Q3  9.51131 9.41373
+1979 Q4  9.59028 9.51147
+1980 Q1  8.94841 9.23936
+1980 Q2  9.23204 9.11021
+1980 Q3  9.33353 9.26256
+1980 Q4  9.42907 9.37326
+1981 Q1  8.92435 9.27774
+1981 Q2  9.68676 9.56373
+1981 Q3  9.49022 9.44123
+1981 Q4  9.27191 9.20978
+1982 Q1  9.07742 9.27800
+1982 Q2  9.09152 8.93882
+1982 Q3  8.85756 8.80070
+1982 Q4  9.23682 9.20978
+1983 Q1  8.96946 9.36639
+1983 Q2  9.74730 9.53403
+1983 Q3  9.19638 9.16430
+1983 Q4  9.20100 9.17010
+1984 Q1  8.87905 9.22441
+1984 Q2  9.29149 9.06499
+1984 Q3  9.22674 9.17874
+1984 Q4  9.07879 9.05499
+1985 Q1  8.85371 9.21533
+1985 Q2  9.48976 9.29932
+1985 Q3  9.45644 9.39659
+1985 Q4  9.50711 9.50673
+1986 Q1  9.06678 9.45263
+1986 Q2  9.76025 9.56119
+1986 Q3  9.66453 9.59579
+1986 Q4  9.62982 9.63142
+1987 Q1  9.45355 9.81024
+1987 Q2 10.02330 9.82192
+1987 Q3  9.91106 9.83895
+1987 Q4  9.70070 9.70470
+1988 Q1  9.28863 9.63996
+1988 Q2  9.88458 9.68554
+1988 Q3  9.74936 9.66689
+1988 Q4  9.65686 9.67826
+1989 Q1  9.38154 9.72698
+1989 Q2  9.80212 9.58075
+1989 Q3  9.68537 9.58420
+1989 Q4  9.62163 9.63633
+1990 Q1  9.39831 9.72549
+1990 Q2  9.75700 9.53303
+1990 Q3  9.36826 9.27253
+1990 Q4  9.12187 9.11481
+1991 Q1  8.55282 8.94173
+1991 Q2  9.46640 9.26625
+1991 Q3  9.47698 9.42029
+1991 Q4  9.40996 9.45372
+1992 Q1  8.95299 9.34526
+1992 Q2  9.59927 9.39728
+1992 Q3  9.46392 9.35131
+1992 Q4  9.33586 9.35203
+1993 Q1  8.84304 9.25701
+1993 Q2  9.48154 9.26283
+1993 Q3  9.39041 9.29626
+1993 Q4  9.33388 9.34307
+1994 Q1  8.84029 9.25595
+1994 Q2  9.55185 9.34914
+1994 Q3  9.37407 9.28447
+1994 Q4  9.17906 9.17988
+1995 Q1  8.63498 9.08692
+1995 Q2  9.09193 8.88837
+1995 Q3  8.98369 8.85881
+1995 Q4  8.90404 8.89373
+1996 Q1  8.43822 8.87019
+1996 Q2  9.24975 9.04389
+1996 Q3  9.21207 9.08345
+1996 Q4  9.09324 9.10529
+1997 Q1  8.80297 9.25462
+1997 Q2  9.42889 9.22276
+1997 Q3  9.35262 9.24205
+1997 Q4  9.25417 9.25462
+1998 Q1  8.86733 9.25383
+1998 Q2  9.37656 9.17874
+1998 Q3  9.24503 9.13837
+1998 Q4  9.17713 9.18701
+1999 Q1  8.84626 9.22960
+1999 Q2  9.44296 9.25754
+1999 Q3  9.36823 9.25754
+1999 Q4  9.31380 9.30993
+2000 Q1  8.95635 9.32119
+2000 Q2  9.41121 9.23503
+2000 Q3  9.42392 9.34623
+2000 Q4  9.33444 9.31969
+2001 Q1  9.02091 9.36211
+2001 Q2  9.54631 9.38849
+2001 Q3  9.43065 9.34502
+2001 Q4  9.44894 9.44277</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">ts</span>(Hstarts[,<span class="dv">1</span>],                </span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>        <span class="at">start =</span> <span class="dv">1960</span>,               <span class="co"># 시계열 시작 날짜</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>        <span class="at">frequency =</span> <span class="dv">4</span>)              <span class="co"># 분기별 시계열로 1년에 4번 관측</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">3</span>,<span class="dv">1</span>))                   <span class="co"># 3개의 그래프를 한 화면에 출력</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="co"># 시계열 그림</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(x,</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>     <span class="at">xlab =</span> <span class="st">"year"</span>, <span class="at">ylab =</span> <span class="st">"log(starts)"</span>,</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>     <span class="at">type =</span> <span class="st">"l"</span>,                    <span class="co"># 선으로 표시</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>     <span class="at">main=</span><span class="st">"(a)"</span>)</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="co"># 자기상관계수 그림</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="fu">acf</span>(x,   </span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">main =</span> <span class="st">"(b)"</span>,</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab =</span> <span class="st">"lag"</span>)</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="co"># 분기별 상자그림</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>quart <span class="ot">=</span> <span class="fu">rep</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>, <span class="dv">42</span>)                <span class="co"># 분기 </span></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a><span class="fu">boxplot</span>(x <span class="sc">~</span> quart,</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>        <span class="at">xlab =</span> <span class="st">"quarter"</span>, <span class="at">ylab =</span> <span class="st">"log(starts)"</span>,</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>        <span class="at">main =</span> <span class="st">"(c)"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="SARIMA_files/figure-html/unnamed-chunk-1-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p><code>Result!</code> (a) 그래프를 통해 해당 시계열은 계절성이 강하다는 것을 알 수 있다.<br>
+(b) 그래프를 통해 4의 배수인 시차에서는 자기상관이 크며, 다른 시차에서는 천천히 0으로 감소한다는 것을 알 수 있다.<br>
+(c) 그래프를 통해 해당 시계열의 관측값은 1분기에 가장 낮으며, 2분기에는 높다는 것을 알 수 있다.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">3</span>,<span class="dv">2</span>))                      <span class="co"># 한 행에 2개의 그래프를 출력 -&gt; 총 3개 행으로 6개의 그래프가 출력됨</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="fu">diff</span>(x),                          <span class="co"># 1번 차분한 시계열 그림</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>     <span class="at">xlab =</span> <span class="st">"year"</span>,</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>     <span class="at">type =</span> <span class="st">"l"</span>,</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>     <span class="at">main =</span> <span class="st">"(a) nonseasonal differencing"</span>)</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="fu">acf</span>(<span class="fu">diff</span>(x),                           <span class="co"># 1번 차분한 시계열의 자기상관계수 그림</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">main =</span> <span class="st">"(b) nonseasonal differencing"</span>,</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab =</span> <span class="st">"lag"</span>)</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="fu">diff</span>(x, <span class="at">lag =</span> <span class="dv">4</span>),                 <span class="co"># 주기 4만큼 계절 차분한 시계열 그림</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>     <span class="at">type =</span> <span class="st">"l"</span>,</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>     <span class="at">xlab =</span> <span class="st">"year"</span>,</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>     <span class="at">main =</span> <span class="st">"(c) seasonal differencing"</span>)</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="fu">acf</span>(<span class="fu">diff</span>(x, <span class="at">lag =</span> <span class="dv">4</span>),                  <span class="co"># 계절 차분한 시계열의 자기상관계수 그림</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">main =</span> <span class="st">"(d) seasonal differencing"</span>,</span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab =</span> <span class="st">"lag"</span>)</span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="fu">diff</span>(<span class="fu">diff</span>(x, <span class="at">diff =</span> <span class="dv">1</span>), <span class="at">lag =</span> <span class="dv">4</span>), <span class="co"># 1번 차분한 후 주기 4만큼 계절 차분한 시계열 그림</span></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>     <span class="at">type =</span> <span class="st">"l"</span>, </span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>     <span class="at">xlab =</span> <span class="st">"year"</span>,</span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>     <span class="at">main =</span> <span class="st">"(e) seasonal &amp; nonseasonal differencing"</span>)</span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a><span class="fu">acf</span>(<span class="fu">diff</span>(<span class="fu">diff</span>(x, <span class="at">diff =</span> <span class="dv">1</span>), <span class="at">lag =</span> <span class="dv">4</span>),  <span class="co"># 1번 차분한 후 주기 4만큼 계절 차분한 시계열의 자기상관계수 그림</span></span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>    <span class="at">main =</span> <span class="st">"(f) seasonal &amp; nonseasonal differencing"</span>,</span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab =</span> <span class="st">"lag"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="SARIMA_files/figure-html/unnamed-chunk-2-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p><code>Caution!</code> 함수 <code>diff()</code>를 이용하여 차분을 수행할 수 있다. <span class="math inline">\(k\)</span>번 차분 <span class="math inline">\(\Delta^kY_{t}\)</span>을 수행하고 싶으면 옵션 <code>diff = k</code>를 입력하면 되고, 주기 <span class="math inline">\(s\)</span>만큼 계절차분 <span class="math inline">\(\Delta_sY_{t}\)</span>을 수행하고 싶으면 옵션 <code>lag = s</code>를 입력하면 된다.<br>
+<code>Result!</code> (a)와 (b) 그래프를 통해 1번 차분한 시계열은 계절성을 보이며, 높은 자기상관을 가진다는 것을 알 수 있다.<br>
+(c)와 (d) 그래프를 통해 원 시계열에 계절차분을 수행함으로써 계절성이 제거된 것을 알 수 있다.<br>
+(e)와 (f) 그래프를 통해 원 시계열에 계절차분과 차분을 동시에 수행함으로써 계절성이 제거되고 시간의 흐름에 따라 평균이 변하지 않는다는 것을 알 수 있다.</p>
+<section id="sarima-모형" class="level3" data-number="6.1.1">
+<h3 data-number="6.1.1" class="anchored" data-anchor-id="sarima-모형"><span class="header-section-number">6.1.1</span> SARIMA 모형</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>pacman<span class="sc">::</span><span class="fu">p_load</span>(<span class="st">"forecast"</span>)</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="co"># 1. ARIMA(1,1,1)(1,1,1)[4] 모형 구축</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>pacman<span class="sc">::</span><span class="fu">p_load</span>(<span class="st">"forecast"</span>)</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>fit1 <span class="ot">&lt;-</span> <span class="fu">arima</span>(x, </span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>              <span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>),                            <span class="co"># ARIMA(p,d,q)                     </span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>              <span class="at">seasonal =</span> <span class="fu">list</span>(<span class="at">order =</span> <span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>),    <span class="co"># 계절성(P,D,Q)</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>                              <span class="at">period =</span> <span class="dv">4</span>))         <span class="co"># 주기 s</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>fit1</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:
+arima(x = x, order = c(1, 1, 1), seasonal = list(order = c(1, 1, 1), period = 4))
+
+Coefficients:
+         ar1      ma1     sar1     sma1
+      0.6883  -0.8819  -0.1550  -0.7659
+s.e.  0.2386   0.1875   0.0974   0.0812
+
+sigma^2 estimated as 0.02573:  log likelihood = 64.13,  aic = -118.27</code></pre>
+</div>
+</div>
+<p><code>Caution!</code> 함수 <code>arima()</code>의 옵션 <code>seasonal</code>을 이용하여 SARIMA 모형을 구축할 수 있다.</p>
+<p><code>Result!</code> 모형 추정 결과에 의하면, 구축된 ARIMA(1,1,1)(1,1,1)[4] 모형은 <span class="math inline">\((1-0.6883B)(1+0.1550B^4)(1-B)(1-B^4)Y_t=(1-0.8819B)(1-0.7659B^4)\epsilon_t\)</span>이다.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 잔차를 이용한 모형 진단</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">Box.test</span>(<span class="fu">residuals</span>(fit1), <span class="at">lag =</span> <span class="dv">10</span>,</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>         <span class="at">type =</span> <span class="st">"Ljung-Box"</span>,</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>         <span class="at">fitdf =</span> <span class="dv">4</span>)                                <span class="co"># 추정한 phi, Phi, theta, Theta 개수</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+    Box-Ljung test
+
+data:  residuals(fit1)
+X-squared = 5.8219, df = 6, p-value = 0.4434</code></pre>
+</div>
+</div>
+<p><code>Result!</code> 귀무가설 <span class="math inline">\(H_0 : \rho(1)=\rho(2)=\cdots=\rho(10)=0\)</span>에 대한 검정 결과에 따르면, <span class="math inline">\(p\)</span>값이 0.4434이므로 유의수준 0.05에서 <span class="math inline">\(p\)</span>값이 0.05보다 크기 때문에 귀무가설을 기각하지 못한다. 즉, 잔차에 대해 시차 10까지의 자기상관계수 <span class="math inline">\(\rho(1), \rho(2), \cdots, \rho(10)\)</span> 중 유의한 자기상관계수가 적어도 1개 존재한다는 증거가 부족하며, 해당 시계열에 대해 ARIMA(1,1,1)(1,1,1)[4] 모형을 가정하는 것이 적절하다.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 2. ARIMA(1,1,1)(0,1,1)[4] 모형 구축</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>fit2 <span class="ot">&lt;-</span> <span class="fu">arima</span>(x, </span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>              <span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>),                            <span class="co"># ARIMA(p,d,q)                     </span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>              <span class="at">seasonal =</span> <span class="fu">list</span>(<span class="at">order =</span> <span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">1</span>,<span class="dv">1</span>),    <span class="co"># 계절성(P,D,Q)</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>                              <span class="at">period =</span> <span class="dv">4</span>))         <span class="co"># 주기 s</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>fit2</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:
+arima(x = x, order = c(1, 1, 1), seasonal = list(order = c(0, 1, 1), period = 4))
+
+Coefficients:
+         ar1      ma1     sma1
+      0.6748  -0.8901  -0.8220
+s.e.  0.1419   0.1046   0.0512
+
+sigma^2 estimated as 0.02609:  log likelihood = 62.91,  aic = -117.82</code></pre>
+</div>
+</div>
+<p><code>Result!</code> 모형 추정 결과에 의하면, 구축된 ARIMA(1,1,1)(0,1,1)[4] 모형은 <span class="math inline">\((1-0.6748B)(1-B)(1-B^4)Y_t=(1-0.8901B)(1-0.8220B^4)\epsilon_t\)</span>이다.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 잔차를 이용한 모형 진단</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="fu">Box.test</span>(<span class="fu">residuals</span>(fit2), <span class="at">lag =</span> <span class="dv">10</span>,</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>         <span class="at">type =</span> <span class="st">"Ljung-Box"</span>,</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>         <span class="at">fitdf =</span> <span class="dv">3</span>)                                <span class="co"># 추정한 phi, Phi, theta, Theta 개수</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+    Box-Ljung test
+
+data:  residuals(fit2)
+X-squared = 8.45, df = 7, p-value = 0.2946</code></pre>
+</div>
+</div>
+<p><code>Result!</code> 귀무가설 <span class="math inline">\(H_0 : \rho(1)=\rho(2)=\cdots=\rho(10)=0\)</span>에 대한 검정 결과에 따르면, <span class="math inline">\(p\)</span>값이 0.2946이므로 유의수준 0.05에서 <span class="math inline">\(p\)</span>값이 0.05보다 크기 때문에 귀무가설을 기각하지 못한다. 즉, 잔차에 대해 시차 10까지의 자기상관계수 <span class="math inline">\(\rho(1), \rho(2), \cdots, \rho(10)\)</span> 중 유의한 자기상관계수가 적어도 1개 존재한다는 증거가 부족하며, 해당 시계열에 대해 ARIMA(1,1,1)(0,1,1)[4] 모형을 가정하는 것이 적절하다.</p>
+</section>
+<section id="예측" class="level3" data-number="6.1.2">
+<h3 data-number="6.1.2" class="anchored" data-anchor-id="예측"><span class="header-section-number">6.1.2</span> 예측</h3>
+<p>SARIMA 모형에서 구축한 ARIMA(1,1,1)(0,1,1)[4] 모형과 ARIMA(1,1,1)(0,1,1)[4] 모형은 적절한 것으로 판단되나, 두 번째 모형이 첫 번째 모형보다 모수 개수가 적기 때문에 두 번째 모형이 더 합리적으로 보인다(모형의 간결성). 두 번째 모형을 이용한 예측은 다음 코드를 통해 수행된다.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 예측</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>pred <span class="ot">&lt;-</span> <span class="fu">forecast</span>(fit2, <span class="at">h =</span> <span class="dv">16</span>)             <span class="co"># 미래 16시점까지 예측</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>pred</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>        Point Forecast    Lo 80     Hi 80    Lo 95     Hi 95
+2002 Q1       9.036139 8.829131  9.243147 8.719547  9.352730
+2002 Q2       9.581109 9.317976  9.844241 9.178683  9.983535
+2002 Q3       9.475528 9.180979  9.770076 9.025055  9.926000
+2002 Q4       9.395209 9.080061  9.710357 8.913232  9.877186
+2003 Q1       9.004073 8.661140  9.347006 8.479602  9.528544
+2003 Q2       9.563662 9.200980  9.926344 9.008988 10.118336
+2003 Q3       9.467946 9.089962  9.845930 8.889869 10.046022
+2003 Q4       9.394284 9.003641  9.784926 8.796847  9.991720
+2004 Q1       9.007639 8.595867  9.419411 8.377888  9.637390
+2004 Q2       9.570259 9.141715  9.998803 8.914858 10.225660
+2004 Q3       9.476588 9.033912  9.919264 8.799574 10.153602
+2004 Q4       9.404306 8.949180  9.859432 8.708250 10.100361
+2005 Q1       9.018593 8.542702  9.494484 8.290780  9.746405
+2005 Q2       9.581841 9.088848 10.074834 8.827873 10.335809
+2005 Q3       9.488594 8.980786  9.996402 8.711969 10.265219
+2005 Q4       9.416598 8.895471  9.937725 8.619603 10.213593</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">1</span>)) </span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(pred)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="SARIMA_files/figure-html/unnamed-chunk-7-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="airpassengers-데이터셋" class="level2" data-number="6.2">
+<h2 data-number="6.2" class="anchored" data-anchor-id="airpassengers-데이터셋"><span class="header-section-number">6.2</span> AirPassengers 데이터셋</h2>
+<p>R에서 제공하는 AirPassengers 데이터셋은 1949년 1월부터 1960년 12월까지 월별 비행기 탑승객 수가 기록되어져 있다.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 데이터 불러오기</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(<span class="st">"AirPassengers"</span>)</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>AirPassengers</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>     Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec
+1949 112 118 132 129 121 135 148 148 136 119 104 118
+1950 115 126 141 135 125 149 170 170 158 133 114 140
+1951 145 150 178 163 172 178 199 199 184 162 146 166
+1952 171 180 193 181 183 218 230 242 209 191 172 194
+1953 196 196 236 235 229 243 264 272 237 211 180 201
+1954 204 188 235 227 234 264 302 293 259 229 203 229
+1955 242 233 267 269 270 315 364 347 312 274 237 278
+1956 284 277 317 313 318 374 413 405 355 306 271 306
+1957 315 301 356 348 355 422 465 467 404 347 305 336
+1958 340 318 362 348 363 435 491 505 404 359 310 337
+1959 360 342 406 396 420 472 548 559 463 407 362 405
+1960 417 391 419 461 472 535 622 606 508 461 390 432</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 시계열 그림</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(AirPassengers)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="SARIMA_files/figure-html/unnamed-chunk-9-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p><code>Result!</code> 해당 시계열은 추세와 계절성을 모두 가지고 있는 비정상시계열임을 알 수 있다.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 자기상관계수 그림</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="fu">acf</span>(AirPassengers)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="SARIMA_files/figure-html/unnamed-chunk-10-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p><code>Result!</code> 자기상관계수 ACF는 천천히 감소하므로 비정상시계열임을 알 수 있다.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">2</span>,<span class="dv">1</span>))                                 <span class="co"># 2개의 그래프를 한 화면에 출력</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="fu">diff</span>(<span class="fu">diff</span>(AirPassengers, <span class="at">diff =</span> <span class="dv">1</span>), <span class="at">lag =</span> <span class="dv">12</span>), <span class="co"># 1번 차분한 후 주기 12만큼 계절 차분한 시계열 그림</span></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>     <span class="at">type =</span> <span class="st">"l"</span>)</span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a><span class="co"># 자기상관계수 그림</span></span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a><span class="fu">acf</span>(<span class="fu">diff</span>(<span class="fu">diff</span>(AirPassengers, <span class="at">diff =</span> <span class="dv">1</span>), <span class="at">lag =</span> <span class="dv">12</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="SARIMA_files/figure-html/unnamed-chunk-11-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p><code>Result!</code> 계절차분과 차분을 수행한 AirPassengers 시계열은 정상시계열로 보인다.</p>
+<section id="sarima-모형-1" class="level3" data-number="6.2.1">
+<h3 data-number="6.2.1" class="anchored" data-anchor-id="sarima-모형-1"><span class="header-section-number">6.2.1</span> SARIMA 모형</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 1. ARIMA(1,1,1)(1,1,1)[12] 모형 구축</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">arima</span>(AirPassengers, </span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>              <span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>),                            <span class="co"># ARIMA(p,d,q)                     </span></span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>              <span class="at">seasonal =</span> <span class="fu">list</span>(<span class="at">order =</span> <span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>),    <span class="co"># 계절성(P,D,Q)</span></span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>                              <span class="at">period =</span> <span class="dv">12</span>))        <span class="co"># 주기 s</span></span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>fit</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:
+arima(x = AirPassengers, order = c(1, 1, 1), seasonal = list(order = c(1, 1, 
+    1), period = 12))
+
+Coefficients:
+          ar1      ma1     sar1    sma1
+      -0.1387  -0.2027  -0.9228  0.8329
+s.e.   0.5860   0.6123   0.2386  0.3519
+
+sigma^2 estimated as 130.8:  log likelihood = -506.15,  aic = 1022.3</code></pre>
+</div>
+</div>
+<p><code>Result!</code> 모형 추정 결과에 의하면, 구축된 ARIMA(1,1,1)(0,1,1)[12] 모형은 <span class="math inline">\((1+0.1387B)(1+0.9228B^{12})(1-B)(1-B^{12})Y_t=(1-0.2027B)(1+0.8329B^{12})\epsilon_t\)</span>이다.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 잔차를 이용한 모형 진단</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a><span class="fu">Box.test</span>(<span class="fu">residuals</span>(fit), <span class="at">lag =</span> <span class="dv">10</span>,</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>         <span class="at">type =</span> <span class="st">"Ljung-Box"</span>,</span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>         <span class="at">fitdf =</span> <span class="dv">4</span>)                                <span class="co"># 추정한 phi, Phi, theta, Theta 개수</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+    Box-Ljung test
+
+data:  residuals(fit)
+X-squared = 10.476, df = 6, p-value = 0.106</code></pre>
+</div>
+</div>
+<p><code>Result!</code> 귀무가설 <span class="math inline">\(H_0 : \rho(1)=\rho(2)=\cdots=\rho(10)=0\)</span>에 대한 검정 결과에 따르면, <span class="math inline">\(p\)</span>값이 0.106이므로 유의수준 0.05에서 <span class="math inline">\(p\)</span>값이 0.05보다 크기 때문에 귀무가설을 기각하지 못한다. 즉, 잔차에 대해 시차 10까지의 자기상관계수 <span class="math inline">\(\rho(1), \rho(2), \cdots, \rho(10)\)</span> 중 유의한 자기상관계수가 적어도 1개 존재한다는 증거가 부족하며, 해당 시계열에 대해 ARIMA(1,1,1)(0,1,1)[12] 모형을 가정하는 것이 적절하다.</p>
+</section>
+<section id="예측-1" class="level3" data-number="6.2.2">
+<h3 data-number="6.2.2" class="anchored" data-anchor-id="예측-1"><span class="header-section-number">6.2.2</span> 예측</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 예측</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>pred <span class="ot">&lt;-</span> <span class="fu">forecast</span>(fit, <span class="at">h =</span> <span class="dv">48</span>)                      <span class="co"># 미래 48시점까지 예측</span></span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>pred</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>         Point Forecast    Lo 80    Hi 80    Lo 95     Hi 95
+Jan 1961       449.2223 434.5545 463.8901 426.7899  471.6547
+Feb 1961       424.3072 406.7452 441.8691 397.4485  451.1658
+Mar 1961       459.0023 438.6160 479.3886 427.8241  490.1805
+Apr 1961       497.7220 474.9011 520.5430 462.8204  532.6237
+May 1961       509.7462 484.7209 534.7715 471.4733  548.0190
+Jun 1961       568.1989 541.1491 595.2488 526.8297  609.5681
+Jul 1961       655.7364 626.8032 684.6696 611.4868  699.9859
+Aug 1961       641.1725 610.4712 671.8737 594.2190  688.1259
+Sep 1961       546.3741 514.0013 578.7470 496.8642  595.8841
+Oct 1961       496.7500 462.7878 530.7123 444.8092  548.6908
+Nov 1961       427.6964 392.2158 463.1769 373.4335  481.9592
+Dec 1961       471.2915 434.3550 508.2281 414.8019  527.7811
+Jan 1962       484.9196 441.0846 528.7546 417.8797  551.9595
+Feb 1962       458.8334 411.0374 506.6295 385.7356  531.9312
+Mar 1962       487.3741 435.6837 539.0644 408.3205  566.4277
+Apr 1962       529.1175 473.8375 584.3975 444.5741  613.6609
+May 1962       540.1970 481.5427 598.8514 450.4929  629.9012
+Jun 1962       602.8458 541.0014 664.6902 508.2629  697.4286
+Jul 1962       689.8873 625.0095 754.7651 590.6652  789.1094
+Aug 1962       673.9982 606.2226 741.7738 570.3443  777.6521
+Sep 1962       576.2455 505.6910 646.8000 468.3417  684.1493
+Oct 1962       529.0428 455.8148 602.2708 417.0502  641.0354
+Nov 1962       458.1931 382.3859 534.0004 342.2559  574.1303
+Dec 1962       500.3163 422.0147 578.6180 380.5643  620.0683
+Jan 1963       517.2610 431.8276 602.6945 386.6018  647.9203
+Feb 1963       492.2555 401.9707 582.5402 354.1768  630.3341
+Mar 1963       526.4753 431.3724 621.5782 381.0279  671.9226
+Apr 1963       565.4285 465.7688 665.0883 413.0121  717.8450
+May 1963       577.3797 473.3587 681.4007 418.2933  736.4661
+Jun 1963       636.1565 527.9505 744.3626 470.6696  801.6435
+Jul 1963       723.6557 611.4204 835.8910 552.0066  895.3047
+Aug 1963       708.9894 592.8647 825.1142 531.3919  886.5869
+Sep 1963       613.9629 494.0748 733.8511 430.6099  797.3160
+Oct 1963       564.5258 440.9889 688.0627 375.5924  753.4592
+Nov 1963       495.3334 368.2525 622.4144 300.9799  689.6870
+Dec 1963       538.8149 408.2861 669.3437 339.1883  738.4415
+Jan 1964       552.6991 415.1965 690.2018 342.4069  762.9914
+Feb 1964       526.6965 383.8656 669.5273 308.2555  745.1374
+Mar 1964       555.6757 407.5409 703.8105 329.1231  782.2284
+Apr 1964       597.2036 443.9709 750.4363 362.8545  831.5528
+May 1964       608.3505 450.1811 766.5198 366.4513  850.2496
+Jun 1964       670.7002 507.7441 833.6563 421.4803  919.9201
+Jul 1964       757.7771 590.1707 925.3834 501.4453 1014.1088
+Aug 1964       741.9824 569.8515 914.1133 478.7309 1005.2339
+Sep 1964       644.4402 467.9006 820.9798 374.4462  914.4342
+Oct 1964       597.0650 416.2242 777.9058 320.4928  873.6371
+Nov 1964       526.3433 341.3012 711.3854 243.3459  809.3408
+Dec 1964       568.5714 379.4213 757.7215 279.2913  857.8515</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">1</span>)) </span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(pred)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="SARIMA_files/figure-html/unnamed-chunk-14-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./ARIMA.html" class="pagination-link" aria-label="Autoregressive Integrated Moving Average Process">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Autoregressive Integrated Moving Average Process</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./Regression.html" class="pagination-link" aria-label="Regression-based Forecasting">
+        <span class="nav-page-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Regression-based Forecasting</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/JJJJYE/TS/issues/new" class="toc-action"><i class="bi bi-github"></i>Report an issue</a></li></ul></div></div></div></footer><script src="site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>

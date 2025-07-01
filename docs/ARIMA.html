@@ -1,0 +1,1495 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.40">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Young Eun Jeon, Jeong-Wook Lee, and Jung-In Seo">
+
+<title>5&nbsp; Autoregressive Integrated Moving Average Process – Time Series Analysis</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./SARIMA.html" rel="next">
+<link href="./ARMA.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-1092c56c6cadf2eb47b1bc8063ab382a.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-ef31e3f4d9d6eef55c54bdf6b9cd68ca.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="styles/styles.css">
+</head>
+
+<body class="nav-sidebar floating">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./AR.html">Statistical Model</a></li><li class="breadcrumb-item"><a href="./ARIMA.html"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Autoregressive Integrated Moving Average Process</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">Time Series Analysis</a> 
+        <div class="sidebar-tools-main">
+    <a href="https://github.com/JJJJYE/TS" title="Source Code" class="quarto-navigation-tool px-1" aria-label="Source Code"><i class="bi bi-github"></i></a>
+</div>
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Welcome</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">Statistical Model</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./AR.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Autoregressive Process</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./MA.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Moving Average Process</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./ARMA.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Autoregressive Moving Average Process</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./ARIMA.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Autoregressive Integrated Moving Average Process</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./SARIMA.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Seasonal Autoregressive Integrated Moving Average Process</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">Advanced Model</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Regression.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Regression-based Forecasting</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./DHR.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Dynamic Harmonic Regression</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./STLM.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">STLM</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./BSTS.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Dynamic Linear Model and Bayesian Structural Time Series</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./TBATS.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">TBATS</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Bagging.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Bootstrap and Bagging</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Ensemble.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Ensemble</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Neuron.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Neural Network Model</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">ML &amp; DL</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./ML.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Machine Learning</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./DL.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Deep Learning</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+ <span class="menu-text">Imputation</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Imputation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Imputation using Kalman Smoothing</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#함수-설명" id="toc-함수-설명" class="nav-link active" data-scroll-target="#함수-설명"><span class="header-section-number">5.1</span> 함수 설명</a></li>
+  <li><a href="#random-walk-and-momentum-plot" id="toc-random-walk-and-momentum-plot" class="nav-link" data-scroll-target="#random-walk-and-momentum-plot"><span class="header-section-number">5.2</span> Random Walk and Momentum Plot</a></li>
+  <li><a href="#cpi-데이터셋" id="toc-cpi-데이터셋" class="nav-link" data-scroll-target="#cpi-데이터셋"><span class="header-section-number">5.3</span> CPI 데이터셋</a>
+  <ul class="collapse">
+  <li><a href="#arima-모형" id="toc-arima-모형" class="nav-link" data-scroll-target="#arima-모형"><span class="header-section-number">5.3.1</span> ARIMA 모형</a></li>
+  </ul></li>
+  <li><a href="#mishkin-데이터셋" id="toc-mishkin-데이터셋" class="nav-link" data-scroll-target="#mishkin-데이터셋"><span class="header-section-number">5.4</span> Mishkin 데이터셋</a>
+  <ul class="collapse">
+  <li><a href="#단위근-검정" id="toc-단위근-검정" class="nav-link" data-scroll-target="#단위근-검정"><span class="header-section-number">5.4.1</span> 단위근 검정</a></li>
+  <li><a href="#arima-모형-1" id="toc-arima-모형-1" class="nav-link" data-scroll-target="#arima-모형-1"><span class="header-section-number">5.4.2</span> ARIMA 모형</a></li>
+  <li><a href="#예측" id="toc-예측" class="nav-link" data-scroll-target="#예측"><span class="header-section-number">5.4.3</span> 예측</a></li>
+  </ul></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/JJJJYE/TS/issues/new" class="toc-action"><i class="bi bi-github"></i>Report an issue</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./AR.html">Statistical Model</a></li><li class="breadcrumb-item"><a href="./ARIMA.html"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Autoregressive Integrated Moving Average Process</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Autoregressive Integrated Moving Average Process</span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="함수-설명" class="level2" data-number="5.1">
+<h2 data-number="5.1" class="anchored" data-anchor-id="함수-설명"><span class="header-section-number">5.1</span> 함수 설명</h2>
+<ul>
+<li>관측된 시계열에 자기회귀누적이동평균모형(Autoregressive Integrated Moving Average Model)을 구축하는 데 유용한 함수를 요약하면 다음과 같다.</li>
+</ul>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">함수</th>
+<th style="text-align: left;">설명</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><code>arima()</code></td>
+<td style="text-align: left;">ARIMA모형의 차수 <span class="math inline">\(p\)</span>와 <span class="math inline">\(q\)</span>, 차분 수 <span class="math inline">\(d\)</span>를 지정하여 모형 구축</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>auto.arima()</code></td>
+<td style="text-align: left;">모형의 차수 지정없이 자동적으로 최적화된 모형 구축</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>acf()</code></td>
+<td style="text-align: left;">상관도표그림</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>pacf()</code></td>
+<td style="text-align: left;">부분상관도표그림</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>Box.test()</code></td>
+<td style="text-align: left;">Ljung-Box Test</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>checkresiduals()</code></td>
+<td style="text-align: left;">잔차가 백색잡음과정의 가정을 만족하는지 확인할 때 사용</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>forecast()</code></td>
+<td style="text-align: left;">예측</td>
+</tr>
+</tbody>
+</table>
+<p><br></p>
+</section>
+<section id="random-walk-and-momentum-plot" class="level2" data-number="5.2">
+<h2 data-number="5.2" class="anchored" data-anchor-id="random-walk-and-momentum-plot"><span class="header-section-number">5.2</span> Random Walk and Momentum Plot</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># AR(1)과정을 따르는 시계열 생성</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">4631</span>)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>y1 <span class="ot">&lt;-</span> <span class="fu">arima.sim</span>(<span class="at">n =</span> <span class="dv">500</span>,                 <span class="co"># 생성하고자하는 시계열 개수</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>               <span class="fu">list</span>(<span class="at">ar =</span> <span class="fu">c</span>(<span class="fl">0.4</span>)))        <span class="co"># AR(1)과정 : Y_t = 0.4Y_{t-1}</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>y1</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Time Series:
+Start = 1 
+End = 500 
+Frequency = 1 
+  [1] -0.912343409 -1.701603284  1.309603454  0.691301009  0.832229499  0.555481039 -0.026684342 -0.362545410  0.693315964 -0.075195230  0.122254548 -0.370393783 -0.254577654  0.187517312 -1.708057556
+ [16]  0.986697733 -0.640294098 -0.885591883 -0.993104578 -0.135172972 -0.194449428 -0.123467230 -1.216275158 -0.931739467  0.031253153 -1.499635290  1.319634259  2.398330132 -0.229766437  1.332681837
+ [31]  0.157756638 -0.103097574 -0.102247983  2.536262232  3.218027097  0.445937187 -0.177490207 -1.602786627 -0.913088486 -1.406607759  0.099831368 -1.448052841  0.277834307  0.308540220  0.604106907
+ [46]  0.372668105  1.287859364  1.821393863  3.624531543  0.972845982 -0.896416641 -1.777569846 -0.695491554 -1.375497500  1.007413097  1.142459616  0.721150425 -0.400368442 -0.961452076 -0.969140832
+ [61] -1.968814756 -0.798978245 -1.022224506 -1.673391629 -0.705015657  0.731069223 -0.427970435  1.303036486  1.862548515  0.017150757  1.279744874  1.015345454  2.535688480  1.043884770  1.103283049
+ [76]  2.050819678  0.166049018  1.325027055  0.982567526 -1.866691371 -1.395834381 -2.988217256 -0.158685151 -0.491788055 -0.277597713  1.604608492  0.982089512  0.125541809  0.635742936 -0.235507928
+ [91]  0.132245190 -0.483377174  0.351436414  2.254957441 -0.203113635  1.751899755  1.201800038  2.079376478  1.641068416  0.012711375  0.455767972 -0.247430434 -0.419432042 -1.387682589 -0.806270199
+[106] -1.412385197 -1.392636594  1.346065579  0.313476772  0.845857651  0.029078760  0.054460112 -0.885253382 -0.146332643 -0.618382418 -0.920818943 -0.338097474 -0.752403660 -1.223742893  0.689190649
+[121]  0.539929591  1.258735015  0.022750117 -0.869336438 -0.828436846 -2.166858885  0.273965986 -1.037722970 -0.589593679  1.943031697  0.861840955 -0.520984536  0.770711156  1.101170054  0.846006091
+[136] -2.173509959 -1.102412181  0.596310901 -0.281340324  0.879172771 -0.409098649  1.747917946  0.444448222 -0.304067456 -0.970378141 -0.237309951 -0.342986461 -0.497046979 -0.938379568 -0.230699307
+[151] -0.696098707 -0.528535492  1.179030894  1.775753907  0.135886565  0.219726895  1.743976297  3.234301835  0.144757587 -1.026764175 -1.290638719 -0.293860740  0.213341896  0.656327137  0.115984113
+[166]  1.718136766  0.476141379 -0.987470475 -1.852852123 -2.641018085 -0.024482023  0.491991907  0.975704783 -0.002667929 -0.136539414 -0.081797455 -0.702349988 -0.149531603  0.467953220  0.075355046
+[181] -0.558518159  0.281974471 -0.899797597 -1.328805544 -0.027818037  0.802736204 -0.968890576 -0.312796925  0.867650846 -0.257391157  0.172430824 -0.313593354  1.450511226  0.445832929 -0.349042275
+[196] -2.148408416 -0.898881311  0.151759003 -2.266476419  0.117458198  1.766492454 -0.526284231  0.066299695 -0.566873492  0.965266585  1.037151790 -1.587680491  1.813497932  1.255998632  0.161051227
+[211]  3.054247824  0.952734586  0.452260141  0.203109914 -0.612809154 -1.421695279 -0.075559582 -0.150847637 -0.294898135 -0.191676540 -0.984143939 -0.954974484 -1.952447346 -0.407105502 -1.010789331
+[226] -0.376014894 -0.639076989 -1.140124930  0.607587073  0.094643343  1.277664446  1.289747945  0.765406149  0.965295215  0.768660214  2.119481591  1.975781515  1.218813681  0.168313822  0.299093643
+[241]  1.074462951  0.832784873  2.086258930  0.916655229 -0.164630750 -1.621972456 -1.146651373 -1.195654157 -0.949149364  0.278622989 -0.349154803 -0.063271529  0.487016245 -0.256592989 -0.198698480
+[256]  0.139972608 -1.401984577 -0.451456758  0.546480685 -0.118633637  0.834943293  1.232088158 -0.628640225 -1.307409713 -1.459409232 -0.035619335 -0.178265267  0.126249921 -1.136784165 -2.529288363
+[271]  0.386093595  0.625958961 -1.444598418 -0.757761283 -0.958362055 -1.367402052  0.002037527  0.624906595 -1.513101287  0.318593880  0.341663053  0.750263380 -1.475926277 -0.157797771 -0.245202005
+[286] -0.537848659  0.110833231 -1.759603329 -0.086328201 -0.127624951 -0.587355815 -2.306925358 -0.187697381 -1.456423114 -0.186679580 -0.190593254  0.446225486 -0.710882725  0.669572420 -1.652750327
+[301] -2.254961336 -0.242182465  0.667217541  0.935181469  1.634818270  0.312140714 -1.067727411  0.416256545  0.597315306 -2.083217594 -0.686914533  1.523376113 -0.589944868  0.809860833 -0.978598351
+[316] -2.291625802 -0.468682911 -1.008714414 -1.689834548 -0.417147451 -0.803271601 -0.832076120  0.065363742 -0.093893644 -1.049059664 -1.444510947 -1.076551021  0.159225511  0.899011492  0.495151288
+[331] -2.182210398 -0.704122441 -1.850799443 -0.911979956 -0.364270108  0.833332861  0.886993545  0.118737971 -0.608727843 -1.085932642  0.539806089  1.230683997  1.145261304  0.979793271  0.981000516
+[346]  0.858859490  0.425712618  1.451944450  1.040442611  1.270852691  0.001724409  0.104234966 -0.341138452 -1.138528598 -1.618354797 -1.699497595 -0.243076411 -0.651603385  1.343148562 -1.751853045
+[361] -2.139267445 -1.229228556  0.255161099  1.813250189  1.862858137  0.208573786  0.501641144 -1.252334702 -1.172962682 -1.129589843 -0.067739846 -0.062815505 -1.508314314 -0.335414905 -0.353518485
+[376]  0.208172483  0.262092705  0.531750971 -0.824122936  0.017032118 -1.015173764  0.365974862 -1.400376808 -1.443808435 -0.451407292  0.066326783 -0.895822894  0.900912062 -0.037442219 -0.456481687
+[391]  2.377575658  2.430206896 -1.619430146  0.987079742  0.281160126 -1.018931312 -0.794530108  1.494620796  1.388568007 -0.936099757 -1.617907620 -1.593275135 -0.836974326 -0.798359722 -1.113207216
+[406]  0.511917371 -1.735132035  0.177605755 -1.184768329  0.188680990 -0.878350456 -0.586789699 -0.784074820  0.617449054  2.593695064  0.547644160 -1.303269875  0.256800524 -0.885652387 -0.367378463
+[421] -0.458222229  0.632855057 -2.123028093 -0.601463044 -1.402681000 -1.015006105  0.672074035  0.441082153  0.108044662  1.241146031  0.182850562  0.532864396  2.021748358  1.453454116 -0.351721426
+[436] -0.760864939 -0.342109875  0.709747073  0.678984727 -0.345892776  1.049415015  1.099538689  0.931988534 -0.307293897  0.324674165  1.332195826  0.397157781  0.460074576  0.722534790  0.911401034
+[451]  1.052024961 -0.770966223 -1.270573476  0.567950193  0.663503429  1.895802731  0.792548728  0.743382531  0.966190659 -1.038656980 -0.638670844 -0.815864620  0.311205909  0.085439372  1.169179615
+[466]  0.045130403  1.334452836  2.056890984  0.061869779  0.993814932 -0.051180302  0.181854157 -0.867732369 -1.729196924 -1.068033410 -1.336379582 -2.486448663 -0.743950909 -0.780466420  0.422205583
+[481] -0.603969049 -1.086293175 -2.017387073 -2.463539252 -1.517367558 -1.439320711  0.757130325  1.029261284 -1.059658946 -0.542882678  0.053945454  0.336157628 -0.645807708  0.372731417  2.163157158
+[496]  1.349402356  0.636951690  1.163041710  2.250858491 -0.545616025</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>y2 <span class="ot">&lt;-</span> <span class="fu">cumsum</span>(y1)                         <span class="co"># cumsum : 누적합</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>y3 <span class="ot">&lt;-</span> <span class="fu">cumsum</span>(y2)</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">3</span>, <span class="dv">1</span>))                       <span class="co"># 3개의 그래프를 한 화면에 출력</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(y1, <span class="at">type =</span> <span class="st">"l"</span>, </span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>     <span class="at">ylab =</span> <span class="fu">expression</span>(y[<span class="dv">1</span>]),</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>     <span class="at">lwd =</span> <span class="dv">1</span>, <span class="at">main =</span> <span class="st">"(a)"</span>)</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(y2, <span class="at">type =</span> <span class="st">"l"</span>,</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>     <span class="at">xlab =</span> <span class="st">"Time"</span>, <span class="at">ylab =</span> <span class="fu">expression</span>(y[<span class="dv">2</span>]),</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>     <span class="at">lwd =</span> <span class="dv">1</span>, <span class="at">main =</span> <span class="st">"(b)"</span>)</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(y3, <span class="at">type =</span> <span class="st">"l"</span>,</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>     <span class="at">xlab =</span> <span class="st">"Time"</span>, <span class="at">ylab =</span> <span class="fu">expression</span>(y[<span class="dv">3</span>]),</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>     <span class="at">lwd =</span> <span class="dv">1</span>, <span class="at">main =</span> <span class="st">"(c)"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="ARIMA_files/figure-html/unnamed-chunk-1-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p><code>Result!</code> (a) 그래프는 평균 0 근처에서 무작위로 변하며, 정상시계열로 보인다.<br>
+(b) 그래프는 Random Walk로 보인다. → 1차 차분 필요<br>
+(c) 그래프는 Momentum (위 또는 아래로 움직이기 시작하면 그 방향으로 계속 움직이는 경향)으로 보인다. → 2차 차분 필요</p>
+</section>
+<section id="cpi-데이터셋" class="level2" data-number="5.3">
+<h2 data-number="5.3" class="anchored" data-anchor-id="cpi-데이터셋"><span class="header-section-number">5.3</span> CPI 데이터셋</h2>
+<p>CSV 파일에 저장되어 있는 CPI (계절 조정된 미국의 소비자 물가 지수) 데이터셋은 1913년 1월 31일부터 2001년 11월 30일까지 월별 CPI가 기록되어져 있다.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 데이터 불러오기</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>CPI.dat <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="st">".../CPI.dat.csv"</span>)</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(CPI.dat)</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="co"># 1977-01-31 ~ 1987-12-31 CPI만 추출</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>CPI <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(CPI.dat<span class="sc">$</span>CPI)[<span class="dv">769</span><span class="sc">:</span><span class="dv">900</span>,]  </span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(CPI)</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="co"># log(CPI)를 차분</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>CPI_diff1 <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(<span class="fu">diff</span>(<span class="fu">log</span>(CPI), </span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>                            <span class="at">diff =</span> <span class="dv">1</span>))           <span class="co"># 1번 차분</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(CPI_diff1)</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>CPI_diff2 <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(<span class="fu">diff</span>(<span class="fu">log</span>(CPI), </span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>                            <span class="at">diff =</span> <span class="dv">2</span>))           <span class="co"># 2번 차분</span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(CPI_diff2)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>   X.Y..m..d CPI
+1 1913-01-31 9.8
+2 1913-02-28 9.8
+3 1913-03-31 9.8
+4 1913-04-30 9.8
+5 1913-05-31 9.7
+6 1913-06-30 9.8</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 58.7 59.3 59.6 60.0 60.2 60.5</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>            [,1]
+[1,] 0.010169579
+[2,] 0.005046268
+[3,] 0.006688988
+[4,] 0.003327790
+[5,] 0.004971013
+[6,] 0.004946424</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>              [,1]
+[1,] -5.123311e-03
+[2,]  1.642720e-03
+[3,] -3.361198e-03
+[4,]  1.643223e-03
+[5,] -2.458879e-05
+[6,] -2.434673e-05</code></pre>
+</div>
+</div>
+<p><code>Caution!</code> 함수 <code>diff()</code>를 이용하여 시계열을 차분할 수 있으며, 옵션 <code>diff</code>에 차분 횟수를 입력하면 된다.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">3</span>, <span class="dv">1</span>))                               <span class="co"># 3개의 그래프를 한 화면에 출력</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="fu">ts</span>(<span class="fu">log</span>(CPI),                                <span class="co"># log(CPI)를 ts로 변환       </span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>        <span class="at">start =</span> <span class="fu">c</span>(<span class="dv">1977</span>, <span class="dv">1</span>),                      <span class="co"># 시계열의 시작 날짜 / c(1977, 1) : 1977년 1월</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>        <span class="at">frequency =</span> <span class="dv">12</span>),                         <span class="co"># 주기 / 12 : 월별 시계열로 1년에 12번 관측</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>     <span class="at">xlab =</span> <span class="st">"year"</span>, <span class="at">ylab =</span> <span class="st">"log(CPI)"</span>,           <span class="co"># 축 이름</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>     <span class="at">type =</span> <span class="st">"b"</span>,                                 <span class="co"># 점과 선을 함께 표시</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>     <span class="at">main =</span> <span class="st">"(a)"</span>)                               <span class="co"># 제목</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="fu">ts</span>(<span class="fu">as.vector</span>(CPI_diff1),                    <span class="co"># log(CPI)를 1번 차분한 시계열을 ts로 변환   </span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>        <span class="at">start =</span> <span class="fu">c</span>(<span class="dv">1977</span>, <span class="dv">2</span>),                      <span class="co"># 시계열의 시작 날짜 / c(1977, 2) : 1977년 2월</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>        <span class="at">frequency =</span> <span class="dv">12</span>),                         </span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>     <span class="at">xlab =</span> <span class="st">"year"</span>, <span class="at">ylab =</span> <span class="fu">expression</span>(<span class="fu">paste</span>(Delta,<span class="st">" log(CPI)"</span>)),</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>     <span class="at">type =</span> <span class="st">"b"</span>,</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>     <span class="at">main =</span> <span class="st">"(b)"</span>)</span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="fu">ts</span>(<span class="fu">as.vector</span>(CPI_diff2),                    <span class="co"># log(CPI)를 2번 차분한 시계열을 ts로 변환 </span></span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>        <span class="at">start =</span> <span class="fu">c</span>(<span class="dv">1977</span>, <span class="dv">3</span>),                      <span class="co"># 시계열의 시작 날짜 / c(1977, 3) : 1977년 3월</span></span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>        <span class="at">frequency =</span> <span class="dv">12</span>),  </span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>     <span class="at">xlab =</span><span class="st">"year"</span>, <span class="at">ylab =</span> <span class="fu">expression</span>(<span class="fu">paste</span>(Delta<span class="sc">^</span><span class="dv">2</span>,<span class="st">" log(CPI)"</span>)), </span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>     <span class="at">type =</span> <span class="st">"b"</span>, </span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>     <span class="at">main =</span> <span class="st">"(c)"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="ARIMA_files/figure-html/unnamed-chunk-4-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p><code>Caution!</code> 함수 <code>ts()</code>를 이용하여 시계열 객체로 변환할 수 있으며, 옵션 <code>start</code>에는 시계열의 시작 날짜, 옵션 <code>frequency</code>에는 주기를 입력한다.<br>
+<code>Result!</code> (a) 그래프를 통해 원 시계열 log(CPI)는 Momentum 현상을 보인다는 것을 알 수 있다.<br>
+(b) 그래프를 통해 1번 차분한 log(CPI)는 Momentum 현상은 보이지 않으나, 시간이 흐름에 따라 평균이 변한다는 것을 알 수 있다.<br>
+(c) 그래프를 통해 2번 차분한 log(CPI)는 시간이 흐름에 따라 평균이 0에서 변하지 않는다는 것을 알 수 있다.</p>
+<section id="arima-모형" class="level3" data-number="5.3.1">
+<h3 data-number="5.3.1" class="anchored" data-anchor-id="arima-모형"><span class="header-section-number">5.3.1</span> ARIMA 모형</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 2번 차분한 log(CPI)에 MA(2) 모형 구축</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>fit_ma <span class="ot">&lt;-</span> <span class="fu">arima</span>(CPI_diff2,</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>                <span class="at">order =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">2</span>))              <span class="co"># (p, d, q)</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>fit_ma</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:
+arima(x = CPI_diff2, order = c(0, 0, 2))
+
+Coefficients:
+          ma1      ma2  intercept
+      -0.3433  -0.3694      0e+00
+s.e.   0.0831   0.0837      1e-04
+
+sigma^2 estimated as 5.062e-06:  log likelihood = 607.81,  aic = -1207.62</code></pre>
+</div>
+</div>
+<p><code>Result!</code> 2번 차분한 log(CPI)에 대해 구축된 MA(2) 모형, 즉, 원 시계열 log(CPI)에 대해 구축된 ARIMA(0,2,2) 모형은 <span class="math inline">\((1-B)^2Y_t=\epsilon_t-0.3433\epsilon_{t-1}-0.3694\epsilon_{t-2}\)</span>이다.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 잔차를 이용한 모형 진단</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="fu">Box.test</span>(fit_ma<span class="sc">$</span>resid,                           <span class="co"># 잔차</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>         <span class="at">lag =</span> <span class="dv">20</span>, </span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>         <span class="at">type =</span> <span class="st">"Ljung-Box"</span>,</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>         <span class="at">fitdf =</span> <span class="dv">2</span>)                              <span class="co"># 추정된 theta 개수</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+    Box-Ljung test
+
+data:  fit_ma$resid
+X-squared = 26.956, df = 18, p-value = 0.07983</code></pre>
+</div>
+</div>
+<p><code>Result!</code> 귀무가설 <span class="math inline">\(H_0 : \rho(1)=\rho(2)=\cdots=\rho(20)=0\)</span>에 대한 검정 결과에 따르면, <span class="math inline">\(p\)</span>값이 0.07983이므로 유의수준 0.05에서 <span class="math inline">\(p\)</span>값이 0.05보다 크기 때문에 귀무가설을 기각하지 못한다. 즉, 잔차에 대해 시차 20까지의 자기상관계수 <span class="math inline">\(\rho(1), \rho(2), \cdots, \rho(20)\)</span> 중 유의한 자기상관계수가 적어도 1개 존재한다는 증거가 부족하며, 2번 차분한 log(CPI)에 대해 MA(2) 모형을 가정하는 것이 적절하다.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">2</span>,<span class="dv">2</span>))                                <span class="co"># 1행에 2개의 그래프를 출력 -&gt; 총 2개의 행으로 4개의 그래프가 출력됨</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="fu">acf</span>(<span class="fu">log</span>(CPI),<span class="at">main =</span> <span class="st">"(a) log(CPI)"</span>)</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="fu">acf</span>(CPI_diff1, <span class="at">main =</span> <span class="fu">expression</span>(<span class="fu">paste</span>(<span class="st">"(b) "</span>,Delta,<span class="st">" log(CPI)"</span>)))</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="fu">acf</span>(CPI_diff2, <span class="at">main =</span> <span class="fu">expression</span>(<span class="fu">paste</span>(<span class="st">"(c) "</span>,Delta<span class="sc">^</span><span class="dv">2</span>,<span class="st">" log(CPI)"</span>)))</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="fu">acf</span>(fit_ma<span class="sc">$</span>resid, <span class="at">main =</span> <span class="st">"(d) residuals, ARIMA(0,2,2)"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="ARIMA_files/figure-html/unnamed-chunk-7-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p><code>Result!</code> (a) 그래프를 통해 원 시계열 log(CPI)의 자기상관계수 ACF는 천천히 감소하고 있다는 것을 알 수 있으며, 이는 원 시계열이 비정상시계열임을 의미한다.<br>
+(c) 그래프를 통해 2번 차분한 log(CPI)의 자기상관계수 ACF는 처음 2개의 시차에서 큰 자기상관을 가지고, 그 이후는 작은 자기상관을 가진다는 것을 알 수 있다.<br>
+(d) 그래프를 통해 2번 차분한 log(CPI)에 구축된 MA(2) 모형의 잔차는 자기상관이 존재하지 않다는 것을 알 수 있다. 이는 2번 차분한 log(CPI)에 MA(2) 모형, 즉, 원 시계열 log(CPI)에 ARIMA(0,2,2) 모형을 가정하는 것이 적절하다는 것을 의미한다.</p>
+</section>
+</section>
+<section id="mishkin-데이터셋" class="level2" data-number="5.4">
+<h2 data-number="5.4" class="anchored" data-anchor-id="mishkin-데이터셋"><span class="header-section-number">5.4</span> Mishkin 데이터셋</h2>
+<p>Package <code>"Ecdat"</code>에서 제공하는 Mishkin 데이터셋은 1950년 2월부터 1990년 12월 사이에 인플레이션율에 대한 시계열 데이터셋이다.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 패키지 설치</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>pacman<span class="sc">::</span><span class="fu">p_load</span>(<span class="st">"Ecdat"</span>)</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="co"># 데이터 불러오기</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(Mishkin, <span class="at">package =</span> <span class="st">"Ecdat"</span>)</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>y <span class="ot">&lt;-</span> <span class="fu">as.vector</span>(Mishkin[,<span class="dv">1</span>])             <span class="co"># 월별 인플레이션율 추출</span></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>y</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>  [1] -3.552289  5.247540  1.692860  5.064298  6.719322 11.668920  9.912501  8.346786  6.517766  4.865085 16.076321 19.154240 14.061910  4.650814  1.546310  4.627010 -1.540355  1.540355  0.000000
+ [20]  7.672257  6.102576  6.209472  4.533152  0.000000 -7.564866  0.000000 19.570490 -1.494151  1.494151  0.000000 -1.494151  0.000000  1.494151  0.000000 -1.494151 -2.993894 -6.010291  3.008908
+ [39]  1.501630  2.997634  4.482457  2.979029  2.971549  1.483071  2.960655 -4.443726 -1.484906  2.967978 -1.483071 -1.484906 -2.839906  2.839906  1.484906  0.000000 -1.484906 -2.839906 -2.982291
+ [58]  2.982291 -2.982291  0.000000  0.000000  1.492020  0.000000  0.000000  0.000000  2.978693 -2.978693  4.330177  0.000000  1.484906 -2.836390  0.000000  0.000000  2.836390  1.483071  5.914023
+ [77]  5.751562  8.774637 -1.457907  1.457907  5.682521  1.449363  2.893485  0.000000  2.886525  2.748830  2.873018  2.866156  7.006195  5.678584  1.415482  1.413814  0.000000  4.103441  0.000000
+ [96]  7.020216  1.399128  6.844860  2.777502  0.000000  1.386248  1.384744  0.000000  0.000000  1.383148  1.381556 -1.381556  1.381556 -1.381556  0.000000  1.381556  1.254555  5.504627  2.742874
+[115] -1.370653  2.739743  3.973921  1.363010 -2.727571  1.364560  0.000000  6.799529  0.000000  2.586158  0.000000  0.000000  1.352397  5.394306  1.344819  0.000000  0.000000  1.343314 -1.343314
+[134]  1.343314  0.000000  1.341812  5.230890 -1.335972  2.670459  0.000000  0.000000  0.000000  0.000000  2.664529  2.658626  2.532271  0.000000  0.000000  2.647071  0.000000  6.592472 -1.315600
+[153]  0.000000 -1.317044  1.317044  1.315600  1.194725  0.000000  0.000000  5.242814  3.917133  0.000000  1.302875  1.183181  0.000000  2.598952  0.000000  0.000000 -1.298772  1.298772  2.593336
+[172]  0.000000  2.587653  1.291782 -1.291782  2.582175  1.171857  2.574118  1.284992 -1.284992  0.000000  1.284992  3.846739  2.557659  6.254851  1.270154 -2.541654  2.541654  0.000000  2.536194
+[191]  3.679570  0.000000  7.553715  2.393494  4.999561  0.000000  2.491991  2.486741  7.317456  1.233940  4.811423  0.000000  0.000000  0.000000  1.227743  2.451723  2.446724  3.549967  3.649961
+[210]  4.849325  2.307577  3.617287  3.606416  2.289339  3.588767  4.768305  3.456034  4.735883  3.539687  4.596686  3.515803  3.399432  3.495549  3.485477  5.681739  3.458990  2.300467  3.338259
+[229]  4.574945  6.726781  5.662605  3.282331  7.861482  3.252032  4.457231  4.339972  4.424734  5.408054  7.570396  2.182552  5.439077  3.153226  7.553640  4.197689  3.211568  5.236804  2.126986
+[248]  4.242622  6.240278  4.110415  5.237093  2.088382  5.110830  5.183215  6.096802  5.041712  6.133401  2.962434  1.016681  1.015820  2.029064  1.013247  3.952596  1.009064  5.945445  3.007194
+[267]  2.999539  2.901685  2.984980  2.977574  2.880218  4.934430  2.950948  3.834231  2.934329  5.758887  8.630559 11.440700  9.436906  6.536329  7.438794  3.659775 19.304211  1.838323  7.242186
+[286]  8.105994  8.051480  9.785962 15.814170 12.122030  6.883693 12.010690 10.111450  7.566704 13.394280 12.342670  9.006326  9.680984  7.246837  4.855838  6.371189  4.738003  4.719480  5.566699
+[305]  9.340268 12.388900  4.665991  5.350513  6.864336  6.061113  5.269925  3.040442  3.720887  3.778037  5.200997  6.673568  7.379198  5.857414  5.093520  5.072093  5.117023  3.575525  5.014266
+[324]  6.435108 12.054450  6.336976  9.123064  6.255971  7.616233  4.105433  4.782352  2.760079  4.065748  5.420399  4.033883  6.056223  7.374409  8.668254  9.873637 10.451070 11.012750  5.793180
+[343]  5.119508  7.025764  7.623123  6.306279  6.273224  9.946648 11.106510 10.389710 11.519510 13.766670 11.877010  9.987637  9.318593 10.410780  9.167216  6.281625  9.620259 14.005740 14.956960
+[362] 14.772750  8.707769 10.170030  8.572340  7.396264  9.999892 11.967070  7.265405  7.174647  7.693233 10.614180 15.060890  9.936591  6.880011  7.334265  6.843737  9.197388  8.644333  9.498251
+[381]  5.220479  4.722268  4.229963  6.531282  3.765132  1.835451  1.875277  8.318006 11.909480  8.179443  2.243804  5.880264  5.358331  1.808168  0.903063  2.664138  0.409372  0.818200  8.558391
+[400]  6.479959  4.032262  4.820824  4.002672  5.979086  3.176779  1.981179  1.582568  6.702875  5.491976  2.736532  5.843219  3.492417  3.868475  3.856044  4.994358  5.737063  3.048542  0.000000
+[419]  0.760985  2.279948  4.924980  5.281344  4.883469  4.490115  3.729027  1.860177  2.599458  3.703707  3.692311  4.048485  2.935736  3.659655 -3.293165 -5.508809 -2.579503  3.683244  5.869799
+[438]  0.365932  2.193139  5.828813  1.089709  1.088720  1.087844  7.226761  4.308729  5.364409  6.405601  4.251591  4.236581  3.167622  6.310269  6.277260  3.126359  1.040348  0.000000  3.115431
+[457]  3.107574  5.161263  6.164397  4.092111  5.095515  5.073969  5.052708  8.040197  3.999936  0.998057  1.993322  5.960278  4.944349  6.888122  7.823956  6.804426  2.904398  2.897386  1.927679
+[476]  3.846190  5.746220  2.862824  1.904730 12.307830  5.638225  6.544558  1.863323  2.789618  6.484031  4.610040 10.992540  9.988676  7.212614  2.693695  0.000000</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 시계열 그림</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(y, <span class="at">type =</span> <span class="st">"l"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="ARIMA_files/figure-html/unnamed-chunk-8-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p><code>Result!</code> 시간의 흐름에 따라 평균이 변하므로 원 시계열은 비정상시계열임이 의심된다.</p>
+<section id="단위근-검정" class="level3" data-number="5.4.1">
+<h3 data-number="5.4.1" class="anchored" data-anchor-id="단위근-검정"><span class="header-section-number">5.4.1</span> 단위근 검정</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 패키지 설치</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>pacman<span class="sc">::</span><span class="fu">p_load</span>(<span class="st">"tseries"</span>)</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Dickey-Fuller test</span></span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a><span class="fu">adf.test</span>(y)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+    Augmented Dickey-Fuller Test
+
+data:  y
+Dickey-Fuller = -3.8651, Lag order = 7, p-value = 0.01576
+alternative hypothesis: stationary</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Phillips-Perron test</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="fu">pp.test</span>(y)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+    Phillips-Perron Unit Root Test
+
+data:  y
+Dickey-Fuller Z(alpha) = -248.75, Truncation lag parameter = 5, p-value = 0.01
+alternative hypothesis: stationary</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="co"># KPSS test</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kpss.test</span>(y)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+    KPSS Test for Level Stationarity
+
+data:  y
+KPSS Level = 2.51, Truncation lag parameter = 5, p-value = 0.01</code></pre>
+</div>
+</div>
+<p><code>Caution!</code> 단위근 검정을 수행하기 위해 Package <code>"tseries"</code>에서 제공하는 함수 <code>adf.test()</code>, <code>pp.test()</code>, <code>kpss.test()</code>를 사용한다.<br>
+<code>Result!</code> 1. Dickey-Fuller test를 수행했을 때, <span class="math inline">\(p\)</span>값이 0.01576이므로 유의수준 0.05에서 <span class="math inline">\(p\)</span>값이 0.05보다 작기 때문에 귀무가설을 기각한다. 즉, 관측된 시계열은 정상성을 만족한다.<br>
+2. Phillips-Perron test를 수행했을 때, <span class="math inline">\(p\)</span>값이 0.01이므로 유의수준 0.05에서 <span class="math inline">\(p\)</span>값이 0.05보다 작기 때문에 귀무가설을 기각한다. 즉, 관측된 시계열은 정상성을 만족한다.<br>
+3. KPSS test를 수행했을 때, <span class="math inline">\(p\)</span>값이 0.01이므로 유의수준 0.05에서 <span class="math inline">\(p\)</span>값이 0.05보다 작기 때문에 귀무가설을 기각한다. 즉, 단위근이 존재하므로 관측된 시계열은 비정상성을 가진다.</p>
+</section>
+<section id="arima-모형-1" class="level3" data-number="5.4.2">
+<h3 data-number="5.4.2" class="anchored" data-anchor-id="arima-모형-1"><span class="header-section-number">5.4.2</span> ARIMA 모형</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 패키지 설치</span></span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>pacman<span class="sc">::</span><span class="fu">p_load</span>(<span class="st">"forecast"</span>)</span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a><span class="fu">auto.arima</span>(y,</span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>           <span class="at">max.p =</span> <span class="dv">5</span>, <span class="at">max.q =</span> <span class="dv">5</span>, </span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>           <span class="at">ic =</span> <span class="st">"bic"</span>)              <span class="co"># BIC 기준으로 BIC가 가장 작은 모형을 최적 모형으로 선택</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Series: y 
+ARIMA(1,1,1) 
+
+Coefficients:
+         ar1      ma1
+      0.2383  -0.8772
+s.e.  0.0550   0.0269
+
+sigma^2 = 8.587:  log likelihood = -1221.62
+AIC=2449.25   AICc=2449.29   BIC=2461.83</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="co"># ARIMA(1,1,1) 모형 구축</span></span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>fitARIMA111 <span class="ot">&lt;-</span> <span class="fu">arima</span>(y, <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p><code>Result!</code> 함수 <code>auto.arima()</code>를 이용하여 BIC 기준으로 최적의 모형을 판단했을 때, ARIMA(1,1,1) 모형이 선택되었다. 추정된 모수 결과를 이용하면 구축된 ARIMA(1,1,1) 모형은 <span class="math inline">\((1-B)Y_t = 0.2383Y_{t-1}+\epsilon_t -0.8772\epsilon_{t-1}\)</span>이다.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 잔차를 이용한 모형 진단</span></span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">1</span>))</span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a><span class="fu">acf</span>(fitARIMA111<span class="sc">$</span>resid)            </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="ARIMA_files/figure-html/unnamed-chunk-11-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="fu">Box.test</span>(fitARIMA111<span class="sc">$</span>resid,</span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>         <span class="at">lag =</span> <span class="dv">15</span>,</span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>         <span class="at">fitdf =</span> <span class="dv">2</span>)                <span class="co"># 추정한 phi와 theta 개수</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+    Box-Pierce test
+
+data:  fitARIMA111$resid
+X-squared = 14.442, df = 13, p-value = 0.3435</code></pre>
+</div>
+</div>
+<p><code>Result!</code> 잔차의 자기상관계수 ACF 그래프를 보면 시차 0을 제외하고 막대의 끝이 파란색 선을 넘어가지 않으므로 다른 시차에서 자기상관계수가 통계적으로 유의하다는 증거가 부족하다.<br>
+“Ljung-Box” 검정 결과에 따르면, 귀무가설 <span class="math inline">\(H_0 : \rho(1)=\rho(2)=\cdots=\rho(15)=0\)</span>에 대해 <span class="math inline">\(p\)</span>값이 0.3435이므로 유의수준 0.05에서 <span class="math inline">\(p\)</span>값이 0.05보다 크기 때문에 귀무가설을 기각하지 못한다. 즉, 잔차에 대해 시차 15까지의 자기상관계수 <span class="math inline">\(\rho(1), \rho(2), \cdots, \rho(15)\)</span> 중 유의한 자기상관계수가 적어도 1개 존재한다는 증거가 부족하며, 해당 시계열에 대해 ARIMA(1,1,1) 모형을 가정하는 것이 적절하다.</p>
+</section>
+<section id="예측" class="level3" data-number="5.4.3">
+<h3 data-number="5.4.3" class="anchored" data-anchor-id="예측"><span class="header-section-number">5.4.3</span> 예측</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>pred <span class="ot">&lt;-</span> <span class="fu">forecast</span>(fitARIMA111,</span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>                 <span class="at">h =</span> <span class="dv">100</span>)          <span class="co"># 미래 100시점까지 예측</span></span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>pred</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>    Point Forecast       Lo 80     Hi 80     Lo 95     Hi 95
+492       3.706101 -0.04167452  7.453876 -2.025627  9.437828
+493       4.589298  0.60462429  8.573972 -1.504735 10.683331
+494       4.799773  0.73892466  8.860620 -1.410758 11.010303
+495       4.849930  0.73788314  8.961978 -1.438903 11.138764
+496       4.861884  0.70417897  9.019588 -1.496777 11.220544
+497       4.864732  0.66298827  9.066476 -1.561281 11.290745
+498       4.865411  0.62034731  9.110475 -1.626854 11.357676
+499       4.865573  0.57768877  9.153457 -1.692180 11.423325
+500       4.865611  0.53534501  9.195878 -1.756959 11.488182
+501       4.865620  0.49338614  9.237855 -1.821135 11.552376
+502       4.865623  0.45182011  9.279425 -1.884706 11.615951
+503       4.865623  0.41064046  9.320606 -1.947685 11.678931
+504       4.865623  0.36983763  9.361409 -2.010088 11.741334
+505       4.865623  0.32940172  9.401845 -2.071929 11.803176
+506       4.865623  0.28932308  9.441924 -2.133224 11.864471
+507       4.865623  0.24959239  9.481654 -2.193987 11.925233
+508       4.865623  0.21020076  9.521046 -2.254231 11.985478
+509       4.865623  0.17113966  9.560107 -2.313970 12.045217
+510       4.865623  0.13240091  9.598846 -2.373216 12.104462
+511       4.865623  0.09397664  9.637270 -2.431981 12.163227
+512       4.865623  0.05585933  9.675387 -2.490276 12.221523
+513       4.865623  0.01804173  9.713205 -2.548113 12.279360
+514       4.865623 -0.01948312  9.750730 -2.605502 12.336749
+515       4.865623 -0.05672191  9.787969 -2.662454 12.393701
+516       4.865623 -0.09368109  9.824928 -2.718978 12.450225
+517       4.865623 -0.13036685  9.861614 -2.775084 12.506331
+518       4.865623 -0.16678519  9.898032 -2.830781 12.562028
+519       4.865623 -0.20294187  9.934189 -2.886078 12.617325
+520       4.865623 -0.23884244  9.970089 -2.940983 12.672230
+521       4.865623 -0.27449228 10.005739 -2.995505 12.726752
+522       4.865623 -0.30989655 10.041143 -3.049651 12.780898
+523       4.865623 -0.34506028 10.076307 -3.103430 12.834676
+524       4.865623 -0.37998830 10.111235 -3.156847 12.888094
+525       4.865623 -0.41468527 10.145932 -3.209912 12.941158
+526       4.865623 -0.44915574 10.180402 -3.262630 12.993876
+527       4.865623 -0.48340408 10.214651 -3.315008 13.046255
+528       4.865623 -0.51743452 10.248681 -3.367053 13.098300
+529       4.865623 -0.55125118 10.282498 -3.418771 13.150018
+530       4.865623 -0.58485803 10.316105 -3.470169 13.201415
+531       4.865623 -0.61825894 10.349506 -3.521251 13.252498
+532       4.865623 -0.65145763 10.382704 -3.572024 13.303271
+533       4.865623 -0.68445775 10.415704 -3.622493 13.353740
+534       4.865623 -0.71726281 10.448509 -3.672664 13.403911
+535       4.865623 -0.74987622 10.481123 -3.722542 13.453789
+536       4.865623 -0.78230132 10.513548 -3.772132 13.503379
+537       4.865623 -0.81454132 10.545788 -3.821439 13.552686
+538       4.865623 -0.84659937 10.577846 -3.870467 13.601714
+539       4.865623 -0.87847849 10.609725 -3.919222 13.650469
+540       4.865623 -0.91018167 10.641428 -3.967708 13.698955
+541       4.865623 -0.94171177 10.672958 -4.015929 13.747176
+542       4.865623 -0.97307161 10.704318 -4.063890 13.795137
+543       4.865623 -1.00426392 10.735511 -4.111595 13.842841
+544       4.865623 -1.03529134 10.766538 -4.159047 13.890294
+545       4.865623 -1.06615646 10.797403 -4.206251 13.937498
+546       4.865623 -1.09686182 10.828108 -4.253211 13.984457
+547       4.865623 -1.12740986 10.858657 -4.299930 14.031177
+548       4.865623 -1.15780297 10.889050 -4.346412 14.077659
+549       4.865623 -1.18804350 10.919290 -4.392661 14.123908
+550       4.865623 -1.21813371 10.949380 -4.438680 14.169927
+551       4.865623 -1.24807582 10.979322 -4.484473 14.215719
+552       4.865623 -1.27787201 11.009119 -4.530042 14.261289
+553       4.865623 -1.30752437 11.038771 -4.575391 14.306638
+554       4.865623 -1.33703499 11.068282 -4.620524 14.351771
+555       4.865623 -1.36640586 11.097653 -4.665443 14.396689
+556       4.865623 -1.39563896 11.126886 -4.710151 14.441398
+557       4.865623 -1.42473620 11.155983 -4.754651 14.485898
+558       4.865623 -1.45369947 11.184946 -4.798947 14.530194
+559       4.865623 -1.48253060 11.213777 -4.843040 14.574287
+560       4.865623 -1.51123138 11.242478 -4.886934 14.618181
+561       4.865623 -1.53980356 11.271050 -4.930632 14.661878
+562       4.865623 -1.56824885 11.299496 -4.974135 14.705382
+563       4.865623 -1.59656893 11.327816 -5.017447 14.748694
+564       4.865623 -1.62476545 11.356012 -5.060570 14.791816
+565       4.865623 -1.65283999 11.384087 -5.103506 14.834753
+566       4.865623 -1.68079414 11.412041 -5.146258 14.877505
+567       4.865623 -1.70862943 11.439876 -5.188829 14.920075
+568       4.865623 -1.73634736 11.467594 -5.231220 14.962466
+569       4.865623 -1.76394940 11.495196 -5.273433 15.004680
+570       4.865623 -1.79143700 11.522684 -5.315472 15.046719
+571       4.865623 -1.81881157 11.550058 -5.357338 15.088584
+572       4.865623 -1.84607448 11.577321 -5.399033 15.130279
+573       4.865623 -1.87322710 11.604474 -5.440559 15.171806
+574       4.865623 -1.90027075 11.631517 -5.481919 15.213165
+575       4.865623 -1.92720674 11.658453 -5.523114 15.254360
+576       4.865623 -1.95403634 11.685283 -5.564146 15.295393
+577       4.865623 -1.98076080 11.712007 -5.605018 15.336264
+578       4.865623 -2.00738135 11.738628 -5.645730 15.376977
+579       4.865623 -2.03389918 11.765146 -5.686286 15.417532
+580       4.865623 -2.06031549 11.791562 -5.726686 15.457933
+581       4.865623 -2.08663142 11.817878 -5.766933 15.498179
+582       4.865623 -2.11284812 11.844095 -5.807028 15.538274
+583       4.865623 -2.13896670 11.870213 -5.846973 15.578219
+584       4.865623 -2.16498824 11.896235 -5.886769 15.618016
+585       4.865623 -2.19091383 11.922160 -5.926419 15.657666
+586       4.865623 -2.21674452 11.947991 -5.965924 15.697170
+587       4.865623 -2.24248134 11.973728 -6.005285 15.736531
+588       4.865623 -2.26812530 11.999372 -6.044504 15.775750
+589       4.865623 -2.29367742 12.024924 -6.083582 15.814829
+590       4.865623 -2.31913866 12.050385 -6.122522 15.853769
+591       4.865623 -2.34450999 12.075757 -6.161324 15.892571</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(pred)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="ARIMA_files/figure-html/unnamed-chunk-12-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p><code>Caution!</code> 예측은 Package <code>"forecast"</code>에서 제공하는 함수 <code>forecast()</code>를 이용하여 수행할 수 있다.</p>
+<p><code>Result!</code> 원 시계열은 비정상성을 가지기 때문에 예측 구간은 발산한다는 것을 알 수 있다.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 1번 차분한 시계열에 대한 예측</span></span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a><span class="do">## 시계열 그림</span></span>
+<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="fu">diff</span>(y), <span class="at">type =</span> <span class="st">"l"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="ARIMA_files/figure-html/unnamed-chunk-13-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p><code>Result!</code> 1번 차분한 시계열은 시간의 흐름에 따라 평균이 변하지 않고 분산도 일정해 보이므로 정상시계열로 보인다.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 1번 차분한 시계열에 MA(3) 모형 구축</span></span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a>fit_diff <span class="ot">&lt;-</span> <span class="fu">arima</span>(<span class="fu">diff</span>(y),</span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a>                  <span class="at">order =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">3</span>))</span>
+<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a><span class="co"># 잔차를 이용한 모형 진단</span></span>
+<span id="cb34-6"><a href="#cb34-6" aria-hidden="true" tabindex="-1"></a><span class="fu">acf</span>(fit_diff<span class="sc">$</span>resid)            </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="ARIMA_files/figure-html/unnamed-chunk-14-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="fu">Box.test</span>(fit_diff<span class="sc">$</span>resid,</span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>         <span class="at">lag =</span> <span class="dv">15</span>,</span>
+<span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a>         <span class="at">fitdf =</span> <span class="dv">3</span>)  </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+    Box-Pierce test
+
+data:  fit_diff$resid
+X-squared = 13.346, df = 12, p-value = 0.3444</code></pre>
+</div>
+</div>
+<p><code>Result!</code> 잔차의 자기상관계수 ACF 그래프를 보면 시차 0을 제외하고 막대의 끝이 파란색 선을 넘어가지 않으므로 다른 시차에서 자기상관계수가 통계적으로 유의하다는 증거가 부족하다.<br>
+“Ljung-Box” 검정 결과에 따르면, 귀무가설 <span class="math inline">\(H_0 : \rho(1)=\rho(2)=\cdots=\rho(15)=0\)</span>에 대해 <span class="math inline">\(p\)</span>값이 0.3444이므로 유의수준 0.05에서 <span class="math inline">\(p\)</span>값이 0.05보다 크기 때문에 귀무가설을 기각하지 못한다. 즉, 잔차에 대해 시차 15까지의 자기상관계수 <span class="math inline">\(\rho(1), \rho(2), \cdots, \rho(15)\)</span> 중 유의한 자기상관계수가 적어도 1개 존재한다는 증거가 부족하며, 해당 시계열에 대해 MA(3) 모형을 가정하는 것이 적절하다. 이는 1번 차분한 시계열은 정상시계열임을 의미한다.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 예측</span></span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a>pred.diff <span class="ot">&lt;-</span> <span class="fu">forecast</span>(fit_diff,</span>
+<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a>                      <span class="at">h =</span> <span class="dv">100</span>)          <span class="co"># 미래 100시점까지 예측</span></span>
+<span id="cb37-4"><a href="#cb37-4" aria-hidden="true" tabindex="-1"></a>pred.diff</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>    Point Forecast      Lo 80    Hi 80     Lo 95    Hi 95
+491   3.4279770957 -0.3093655 7.165320 -2.287795 9.143749
+492   0.8929253001 -3.5301468 5.315997 -5.871580 7.657430
+493   0.5146289502 -3.9250766 4.954335 -6.275315 7.304573
+494  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+495  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+496  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+497  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+498  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+499  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+500  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+501  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+502  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+503  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+504  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+505  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+506  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+507  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+508  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+509  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+510  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+511  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+512  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+513  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+514  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+515  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+516  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+517  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+518  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+519  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+520  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+521  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+522  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+523  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+524  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+525  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+526  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+527  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+528  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+529  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+530  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+531  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+532  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+533  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+534  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+535  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+536  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+537  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+538  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+539  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+540  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+541  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+542  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+543  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+544  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+545  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+546  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+547  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+548  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+549  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+550  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+551  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+552  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+553  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+554  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+555  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+556  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+557  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+558  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+559  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+560  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+561  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+562  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+563  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+564  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+565  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+566  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+567  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+568  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+569  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+570  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+571  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+572  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+573  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+574  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+575  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+576  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+577  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+578  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+579  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+580  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+581  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+582  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+583  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+584  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+585  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+586  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+587  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+588  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+589  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880
+590  -0.0001564659 -4.4582307 4.457918 -6.818193 6.817880</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(pred.diff)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="ARIMA_files/figure-html/unnamed-chunk-15-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p><code>Result!</code> 원 시계열을 1번 차분한 시계열은 정상성을 가지기 때문에 예측 구간은 수렴한다는 것을 알 수 있다.</p>
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./ARMA.html" class="pagination-link" aria-label="Autoregressive Moving Average Process">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Autoregressive Moving Average Process</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./SARIMA.html" class="pagination-link" aria-label="Seasonal Autoregressive Integrated Moving Average Process">
+        <span class="nav-page-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Seasonal Autoregressive Integrated Moving Average Process</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/JJJJYE/TS/issues/new" class="toc-action"><i class="bi bi-github"></i>Report an issue</a></li></ul></div></div></div></footer><script src="site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>

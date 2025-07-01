@@ -1,0 +1,23 @@
+/* 제목 영역 스타일 */
+.sidebar-title {
+  display: flex;
+  flex-direction: column;
+ /* align-items: center; */
+  padding: 10px 0 0;
+  margin-bottom: 10px;
+  position: relative;
+}
+
+/* 로고 이미지 */
+.sidebar-title::before {
+  content: "";
+  display: block;
+  background-image: url("cover.png");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  width: 180px;
+  height: 180px;
+  margin-bottom: 6px;
+}
+
